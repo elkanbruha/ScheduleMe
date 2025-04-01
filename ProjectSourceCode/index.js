@@ -37,13 +37,35 @@ app.use(bodyParser.json()); // specify the usage of JSON for parsing request bod
 
 // home
 app.get('/', (req, res) => {
-    res.send('Hello, World!');
+    res.render('pages/home');
     // render home page when complete
 });
 
+app.get('/register', (req, res) => {
+    res.render('pages/Register'); 
+});
+
+app.get('/login', (req, res) => {
+    res.render('pages/login'); 
+});
+
+app.get('/logout', (req, res) => {
+    res.render('pages/logout'); 
+});
+
+app.get('/calendar', (req, res) => {
+    res.render('pages/Calendar'); 
+});
+
+app.get('/appointments', (req, res) => {
+    res.render('pages/appointments'); 
+});
+
+
+
+
 
 /// End Endpoint Config ///
-
 
 
 
