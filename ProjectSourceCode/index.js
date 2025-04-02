@@ -38,8 +38,13 @@ app.use(express.static(path.join(__dirname, 'views')));
 
 // home
 app.get('/', (req, res) => {
-    res.render('pages/home');
-    // render home page when complete
+    res.render('pages/home', {}, (err, html) => {
+        if (err) {
+            res.status(500).send('Error rendering page');
+        } else {
+            res.send(html + '\n\nSuccess');
+        }
+    });
 });
 
 app.get('/register', (req, res) => {
