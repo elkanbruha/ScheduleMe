@@ -37,6 +37,14 @@ body {
 
 /* Bottom note (footer) */
 
+#bottom-note {
+    font-size: 1rem;
+    color: var(--dark-gray-color);
+    text-align: center;
+    width: 100%;
+    padding-bottom: 10px;
+}
+
 /* Animation for arrow */
 .arrow-down {
     animation: bounce 2s infinite;
