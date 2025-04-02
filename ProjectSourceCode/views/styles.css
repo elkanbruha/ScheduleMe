@@ -1,6 +1,6 @@
 /* Main CSS Idea
 
-Background is a darker color, (dark mode), while text is a lighter color. Accent is the same green as in the logo. 
+Background is a lighter color, while text is a darker color. Accent is the same green as in the logo. 
 
 */
 
@@ -11,6 +11,7 @@ Background is a darker color, (dark mode), while text is a lighter color. Accent
     --secondary-color: #000000;
     --accent-color: #849e4b;
     --light-color: #ffffff;
+    --light-gray-color: #bbbbbb;
     --gray-color: #7c7c7c;
     --dark-gray-color: #333333;
     --code-bg-color: #272822; /* Background color for code */
@@ -28,7 +29,7 @@ body {
     font-variation-settings: "wght" 100;
     height: 100%;
     margin: 0;
-    color: var(--light-color);
+    color: var(--primary-color);
 }
 
 /* Main title */
@@ -39,15 +40,26 @@ body {
 
 #bottom-note {
     font-size: 1rem;
-    color: var(--dark-gray-color);
+    color: var(--light-gray-color);
     text-align: center;
     width: 100%;
-    padding-bottom: 10px;
+    padding-bottom: -5px;
+}
+
+/* Image classes */
+
+.rounded-home-image {
+    border-radius: 20%;
+    width: 50%;
+    height: 50%;
+    margin: 0 auto;
+    display: block;
 }
 
 /* Animation for arrow */
 .arrow-down {
-    animation: bounce 2s infinite;
+    animation: bounce 3s infinite;
+    color: var(--accent-color);
 }
 @keyframes bounce {
     0%, 20%, 50%, 80%, 100% {
