@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS bookings (
   schedule_id INT NOT NULL,
   customer_id INT NOT NULL,
   status VARCHAR(50) DEFAULT 'pending',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT fk_schedule
     FOREIGN KEY(schedule_id)
     REFERENCES schedules(schedule_id)
