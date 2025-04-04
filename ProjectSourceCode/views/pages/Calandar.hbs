@@ -1,0 +1,65 @@
+{{> head}}
+{{> nav}}
+
+<body>
+  <div class="container mt-4">
+    <h2 class="mb-4">Calendar</h2>
+    
+    
+    <div class="mb-3">
+      {{#if (eq user.user_type "business")}}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+          Add Business Hours
+        </button>
+      {{else}}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+          Add Event
+        </button>
+      {{/if}}
+    </div>
+
+    
+    <div id="calendar" class="bg-white p-3 rounded shadow"></div>
+
+   
+    <div class="modal fade" id="eventModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="eventForm">
+            <div class="modal-header">
+              <h5 class="modal-title">
+                {{#if (eq user.user_type "business")}}
+                  Add Business Hours
+                {{else}}
+                  Add Event
+                {{/if}}
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control" name="title" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" name="description"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Start Time</label>
+                <input type="datetime-local" class="form-control" name="start_time" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">End Time</label>
+                <input type="datetime-local" class="form-control" name="end_time" required>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
