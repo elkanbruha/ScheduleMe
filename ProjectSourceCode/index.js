@@ -10,30 +10,60 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server.
 
-
-
-
-//database connect
-const { Pool } = require('pg');
-
-// Replace these values with your actual DB config
-const pool = new Pool({
-  user: 'your_db_user',
-  host: 'localhost',
-  database: 'your_db_name',
-  password: 'your_db_password',
-  port: 5432, // default PostgreSQL port
-});
-
-// Test connection
-pool.connect()
-  .then(client => {
-    console.log('Connected to PostgreSQL');
-    client.release();
-  })
-  .catch(err => {
-    console.error('Connection error', err.stack);
-  });
+  
+// Database Config
+const dbConfig = {
+    host: 'db', // use 'localhost' if not using Docker
+    port: 5432,
+    database: process.env.POSTGRES_DB,
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+  };
+  
+  const db = pgp(dbConfig);
+  
+  // Test connection and setup schema
+  const initDB = async () => {
+    try {
+      await db.connect(); // test connection
+      console.log('Database connection successful');
+  
+      // Auto-create your full users/schedules/bookings tables
+      await db.none(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id SERIAL PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL,
+          user_type VARCHAR(50) NOT NULL
+        );
+  
+        CREATE TABLE IF NOT EXISTS schedules (
+          schedule_id SERIAL PRIMARY KEY,
+          user_id INT NOT NULL,
+          start_time TIMESTAMP NOT NULL,
+          end_time TIMESTAMP NOT NULL,
+          title VARCHAR(200),
+          description TEXT,
+          CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        );
+  
+        CREATE TABLE IF NOT EXISTS bookings (
+          booking_id SERIAL PRIMARY KEY,
+          schedule_id INT NOT NULL,
+          customer_id INT NOT NULL,
+          status VARCHAR(50) DEFAULT 'pending',
+          CONSTRAINT fk_schedule FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id) ON DELETE CASCADE,
+          CONSTRAINT fk_customer FOREIGN KEY(customer_id) REFERENCES users(user_id) ON DELETE CASCADE
+        );
+      `);
+  
+      console.log('Tables ensured');
+    } catch (error) {
+      console.error('DB init failed:', error.message || error);
+    }
+  };
+  initDB();
 
 /// Handlebars config
 const hbs = handlebars.create({
