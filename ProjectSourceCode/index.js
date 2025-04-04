@@ -13,6 +13,27 @@ const axios = require('axios'); // To make HTTP requests from our server.
 
 
 
+//database connect
+const { Pool } = require('pg');
+
+// Replace these values with your actual DB config
+const pool = new Pool({
+  user: 'your_db_user',
+  host: 'localhost',
+  database: 'your_db_name',
+  password: 'your_db_password',
+  port: 5432, // default PostgreSQL port
+});
+
+// Test connection
+pool.connect()
+  .then(client => {
+    console.log('Connected to PostgreSQL');
+    client.release();
+  })
+  .catch(err => {
+    console.error('Connection error', err.stack);
+  });
 
 /// Handlebars config
 const hbs = handlebars.create({
