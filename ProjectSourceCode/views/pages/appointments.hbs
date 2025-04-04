@@ -6,19 +6,19 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>Appointment ID</th>
-        <th>Members</th>
-        <th>Time</th>
-        <th>Description</th>
+        <th>Booking ID</th>
+        <th>Customer ID</th>
+        <th>Schedule ID</th>
+        <th>Status</th>
       </tr>
     </thead>
     <tbody>
       {{#each appointments}}
         <tr>
-          <td>{{this.appointment_id}}</td>
-          <td>{{this.members}}</td>
-          <td>{{this.time}}</td>
-          <td>{{this.description}} </td>
+          <td>{{this.booking_id}}</td>
+          <td>{{this.customer_id}}</td>
+          <td>{{this.schedule_id}}</td>
+          <td>{{this.status}} </td>
         </tr>
       {{/each}}
     </tbody>
