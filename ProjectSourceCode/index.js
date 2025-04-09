@@ -243,7 +243,7 @@ app.get('/calendar', (req, res) => {
 });
 
 // Create a new appointment
-app.post('/api/appointments', async (req, res) => {
+app.post('/appointments', async (req, res) => {
   const { user_id, business_id, user_password, start_time, end_time, reason } = req.body;
   
   if (!user_id || !business_id || !user_password || !start_time || !end_time) {
@@ -281,7 +281,7 @@ app.post('/api/appointments', async (req, res) => {
 });
 
 // Get appointments for a user or business
-app.get('/api/appointments', async (req, res) => {
+app.get('/appointments', async (req, res) => {
   const { id, password, type } = req.query;
   
   if (!id || !password || !type) {
@@ -342,6 +342,21 @@ app.get('/api/appointments', async (req, res) => {
   }
 });
 
+// Get all businesses
+app.get('/businesses', async (req, res) => {
+  try {
+    const businesses = await db.manyOrNone(`
+      SELECT business_id, name, business_name
+      FROM businesses
+      ORDER BY name ASC
+    `);
+    
+    res.status(200).json({ businesses });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 /// End Endpoint Config ///
 
