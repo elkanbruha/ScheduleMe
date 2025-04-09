@@ -51,9 +51,20 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 app.use(express.static(path.join(__dirname, 'views')));
 
+// initialize session variables
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    saveUninitialized: false,
+    resave: false,
+  })
+);
 
-
-
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  })
+);
 
 
 /// Endpoint Config ///
@@ -74,18 +85,25 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ message: 'Invalid input' });
+    }
     //hash the password using bcrypt library
     const hash = await bcrypt.hash(req.body.password, 10);
 
     // To-DO: Insert username and hashed password into the 'users' table
     db.none('INSERT INTO Users(username, password) VALUES($1, $2)', [req.body.username, hash])
       .then(() => {
+        res.status(200).json({ message: 'Success' });
         res.redirect('/login');
       })
       .catch(error => {
         console.log(error);
+        res.status(500).json({ message: 'Database error' });
         res.redirect('/register');
-      }); // go back and look at
+      }); 
   });
 
 
