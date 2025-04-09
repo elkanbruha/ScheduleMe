@@ -24,117 +24,67 @@ const hbs = handlebars.create({
 // database configuration
 require('dotenv').config();
 
-// Database Config
 const dbConfig = {
   host: process.env.DB_HOST || 'db',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.POSTGRES_DB || 'appdb',
+  user: process.env.POSTGRES_USER || 'appuser',
+  password: process.env.POSTGRES_PASSWORD || 'secret',
 };
 
 const db = pgp(dbConfig);
 
 const initDB = async () => {
+  let connection;
   try {
-    await db.connect();
+    connection = await db.connect();
+    await db.one('SELECT 1');
     console.log('Database connection successful');
 
-    await db.none(`
-      CREATE TABLE IF NOT EXISTS users (
-        user_id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
-        user_type VARCHAR(50) NOT NULL CHECK (user_type IN ('customer', 'provider', 'admin')),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+    await db.tx(async t => {
+      await t.none(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id SERIAL PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL
+        )`);
 
-      CREATE TABLE IF NOT EXISTS businesses (
-        business_id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        address VARCHAR(255),
-        phone VARCHAR(20),
-        email VARCHAR(255),
-        website VARCHAR(255),
-        owner_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      await t.none(`
+        CREATE TABLE IF NOT EXISTS businesses (
+          business_id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL,
+          business_name VARCHAR(255) NOT NULL
+        )`);
 
-      CREATE TABLE IF NOT EXISTS services (
-        service_id SERIAL PRIMARY KEY,
-        business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        duration INTEGER NOT NULL,
-        price DECIMAL(10, 2),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      await t.none(`
+        CREATE TABLE IF NOT EXISTS appointments (
+          appointment_id SERIAL PRIMARY KEY,
+          business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+          start_time TIMESTAMP NOT NULL,
+          end_time TIMESTAMP NOT NULL,
+          reason TEXT,
+          CHECK (start_time < end_time)
+        )`);
 
-      CREATE TABLE IF NOT EXISTS providers (
-        provider_id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-        business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
-        title VARCHAR(100),
-        bio TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, business_id)
-      );
-
-      CREATE TABLE IF NOT EXISTS provider_services (
-        provider_service_id SERIAL PRIMARY KEY,
-        provider_id INTEGER NOT NULL REFERENCES providers(provider_id) ON DELETE CASCADE,
-        service_id INTEGER NOT NULL REFERENCES services(service_id) ON DELETE CASCADE,
-        UNIQUE(provider_id, service_id)
-      );
-
-      CREATE TABLE IF NOT EXISTS availability (
-        availability_id SERIAL PRIMARY KEY,
-        provider_id INTEGER NOT NULL REFERENCES providers(provider_id) ON DELETE CASCADE,
-        day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
-        start_time TIME NOT NULL,
-        end_time TIME NOT NULL,
-        CHECK (start_time < end_time)
-      );
-
-      CREATE TABLE IF NOT EXISTS appointments (
-        appointment_id SERIAL PRIMARY KEY,
-        customer_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-        provider_id INTEGER NOT NULL REFERENCES providers(provider_id) ON DELETE CASCADE,
-        service_id INTEGER NOT NULL REFERENCES services(service_id) ON DELETE CASCADE,
-        start_time TIMESTAMP NOT NULL,
-        end_time TIMESTAMP NOT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
-        notes TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CHECK (start_time < end_time),
-        CHECK (customer_id != (SELECT user_id FROM providers WHERE provider_id = appointments.provider_id))
-      );
-    `);
-
-    await db.none(`
-      CREATE INDEX IF NOT EXISTS idx_appointments_customer ON appointments(customer_id);
-      CREATE INDEX IF NOT EXISTS idx_appointments_provider ON appointments(provider_id);
-      CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
-      CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time);
-      CREATE INDEX IF NOT EXISTS idx_providers_business ON providers(business_id);
-      CREATE INDEX IF NOT EXISTS idx_services_business ON services(business_id);
-    `);
+      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)');
+      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_business ON appointments(business_id)');
+      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time)');
+    });
 
     console.log('Tables and indexes created');
-
-
-    console.log('Initial data inserted (if needed)');
   } catch (error) {
-    console.error('DB initialization failed:', error.message || error);
-    process.exit(1); 
+    console.error('DB initialization failed:', error.stack || error);
+    process.exit(1);
+  } finally {
+    if (connection) connection.done();
   }
 };
 
 module.exports = { db, initDB };
-
 
 
 // Register `hbs` as our view engine using its bound `engine()` function.
