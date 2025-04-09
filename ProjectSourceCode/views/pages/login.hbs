@@ -1,10 +1,8 @@
-{{> message}}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login Page</title>
     <link rel="stylesheet" href="styles.css" />
 </head>
@@ -16,10 +14,42 @@
             <form action="/login" method="POST">
                 <input type="text" name="username" placeholder="Email or Username" required />
                 <input type="password" name="password" placeholder="Password" required />
-                <button type="submit">Sign In</button>
+
+                <!-- Customer/Business Toggle -->
+                <div class="toggle-wrapper">
+                    <label class="toggle">
+                        <div class="toggle-label-container">
+                            <span class="toggle-label customer">Customer</span>
+                            <span class="toggle-label business">Business</span>
+                        </div>
+                        <input type="checkbox" name="accountType" value="provider" id="accountTypeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button type="submit">Log In</button>
             </form>
             <p>Don't have an account? <a href="/register">Sign Up</a></p>
         </div>
     </div>
-</body>
-</html>
+
+    <script>
+        const toggle = document.querySelector('#accountTypeToggle');
+        const customerLabel = document.querySelector('.customer');
+        const businessLabel = document.querySelector('.business');
+
+        
+        toggle.value = 'customer'; // Default value is 'customer' when the checkbox is unchecked
+
+        // Toggle event listener to update the checkbox value dynamically
+        toggle.addEventListener("change", () => {
+            if (toggle.checked) {
+                toggle.value = 'provider'; // When checked, set value to 'provider'
+                businessLabel.classList.add("highlight");
+                customerLabel.classList.remove("highlight");
+            } else {
+                toggle.value = 'customer'; // When unchecked, set value to 'customer'
+                customerLabel.classList.add("highlight");
+                businessLabel.classList.remove("highlight");
+            }
+        }
