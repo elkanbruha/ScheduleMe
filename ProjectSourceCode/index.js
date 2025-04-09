@@ -157,30 +157,47 @@ app.post('/register', async (req, res) => {
     });
 });
 
-// Login route
 app.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, type } = req.body;
   
-  const user = await db.oneOrNone(`SELECT * FROM users WHERE email = $1`, [email]);
-  
-  if (!user) {
-    console.log('User not found');
-    return res.redirect('/login');
+  if (!email || !password || !type) {
+    return res.status(400).json({ message: 'Missing required fields' });
   }
   
-  const match = await bcrypt.compare(password, user.password);
-  
-  if (!match) {
-    console.log('Invalid password');
-    return res.redirect('/login');
+  try {
+    let entity;
+    
+    if (type === 'user') {
+      entity = await db.oneOrNone(`SELECT * FROM users WHERE email = $1`, [email]);
+    } else if (type === 'business') {
+      entity = await db.oneOrNone(`SELECT * FROM businesses WHERE email = $1`, [email]);
+    } else {
+      return res.status(400).json({ message: 'Invalid type. Must be "user" or "business"' });
+    }
+    
+    if (!entity) {
+      console.log('Entity not found');
+      return res.redirect('/login');
+    }
+    
+    const match = await bcrypt.compare(password, entity.password);
+    
+    if (!match) {
+      console.log('Invalid password');
+      return res.redirect('/login');
+    }
+    
+    // Save entity details and type in session
+    req.session.user = entity;
+    req.session.userType = type;
+    req.session.save();
+    
+    // Redirect to calendar page
+    res.redirect('/calendar');
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-  
-  // Save user details in session
-  req.session.user = user;
-  req.session.save();
-  
-  // Redirect to calendar page
-  res.redirect('/calendar');
 });
 
 
@@ -192,87 +209,69 @@ app.get('/calendar', (req, res) => {
     res.render('pages/Calendar'); 
 });
 
-// Create a new appointment
 app.post('/appointments', async (req, res) => {
-  const { user_id, business_id, user_password, start_time, end_time, reason } = req.body;
-  
-  if (!user_id || !business_id || !user_password || !start_time || !end_time) {
-    return res.status(400).json({ message: 'Missing required fields' });
+  // Check if user is logged in
+  if (!req.session.user || !req.session.userType) {
+    return res.status(401).json({ message: 'You need to be logged in to create appointments' });
   }
   
-  try {
-    const user = await db.oneOrNone('SELECT * FROM users WHERE user_id = $1', [user_id]);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+  const { business_id, start_time, end_time, reason } = req.body;
+  let user_id;
+  
+  if (req.session.userType === 'user') {
+    // User creating appointment
+    if (!business_id || !start_time || !end_time) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
     
-    const passwordMatch = await bcrypt.compare(user_password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Invalid password' });
+    user_id = req.session.user.user_id;
+    
+    try {
+      const business = await db.oneOrNone('SELECT * FROM businesses WHERE business_id = $1', [business_id]);
+      if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
+      }
+      
+      // Create the appointment
+      await db.none(
+        'INSERT INTO appointments(user_id, business_id, start_time, end_time, reason) VALUES($1, $2, $3, $4, $5)',
+        [user_id, business_id, start_time, end_time, reason]
+      );
+      
+      res.status(201).json({ message: 'Appointment created successfully' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error', error: error.message });
     }
-    
-    const business = await db.oneOrNone('SELECT * FROM businesses WHERE business_id = $1', [business_id]);
-    if (!business) {
-      return res.status(404).json({ message: 'Business not found' });
-    }
-    
-    // Create the appointment
-    await db.none(
-      'INSERT INTO appointments(user_id, business_id, start_time, end_time, reason) VALUES($1, $2, $3, $4, $5)',
-      [user_id, business_id, start_time, end_time, reason]
-    );
-    
-    res.status(201).json({ message: 'Appointment created successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+  } else {
+    // Business can't create appointments
+    return res.status(403).json({ message: 'Only users can create appointments' });
   }
 });
 
-// Get appointments for a user or business
 app.get('/appointments', async (req, res) => {
-  const { id, password, type } = req.query;
-  
-  if (!id || !password || !type) {
-    return res.status(400).json({ message: 'Missing required parameters. Please provide id, password, and type (user or business)' });
+  // Check if user is logged in
+  if (!req.session.user || !req.session.userType) {
+    return res.status(401).json({ message: 'You need to be logged in to view appointments' });
   }
   
   try {
-    let entity;
     let appointments;
     
     // Check if user or business
-    if (type === 'user') {
-      // Verify user exists and password is correct
-      entity = await db.oneOrNone('SELECT * FROM users WHERE user_id = $1', [id]);
-      if (!entity) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-      
-      const passwordMatch = await bcrypt.compare(password, entity.password);
-      if (!passwordMatch) {
-        return res.status(401).json({ message: 'Invalid password' });
-      }
+    if (req.session.userType === 'user') {
+      const userId = req.session.user.user_id;
       
       // Get appointments for user
       appointments = await db.manyOrNone(`
-        SELECT a.*, b.name as business_name 
+        SELECT a.*, b.name as business_name, b.business_name as business_display_name
         FROM appointments a
         JOIN businesses b ON a.business_id = b.business_id
         WHERE a.user_id = $1
         ORDER BY a.start_time ASC
-      `, [id]);
-    } else if (type === 'business') {
-      entity = await db.oneOrNone('SELECT * FROM businesses WHERE business_id = $1', [id]);
-      if (!entity) {
-        return res.status(404).json({ message: 'Business not found' });
-      }
-      
-      const passwordMatch = await bcrypt.compare(password, entity.password);
-      if (!passwordMatch) {
-        return res.status(401).json({ message: 'Invalid password' });
-      }
+      `, [userId]);
+    } else if (req.session.userType === 'business') {
+      const businessId = req.session.user.business_id;
       
       appointments = await db.manyOrNone(`
         SELECT a.*, u.name as user_name 
@@ -280,9 +279,7 @@ app.get('/appointments', async (req, res) => {
         JOIN users u ON a.user_id = u.user_id
         WHERE a.business_id = $1
         ORDER BY a.start_time ASC
-      `, [id]);
-    } else {
-      return res.status(400).json({ message: 'Invalid type. Must be "user" or "business"' });
+      `, [businessId]);
     }
     
     res.status(200).json({ appointments });
