@@ -100,3 +100,45 @@ body a:hover {
         transform: translateY(-7px);
     }
 }
+
+.wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    flex-direction: column;
+    background-color: #f8f8f8;
+}
+
+.login-container {
+    background-color: #e0e0e0;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    margin-top: 20px;
+}
+
+.login-container input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.login-container button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background-color: var(--primary-color);
+    color: var(--light-color);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.login-container p {
+    margin-top: 10px;
+}
