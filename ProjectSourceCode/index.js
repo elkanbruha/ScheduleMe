@@ -51,9 +51,20 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 app.use(express.static(path.join(__dirname, 'views')));
 
+// initialize session variables
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    saveUninitialized: false,
+    resave: false,
+  })
+);
 
-
-
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  })
+);
 
 
 /// Endpoint Config ///
