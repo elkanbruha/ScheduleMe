@@ -120,8 +120,6 @@ app.post('/login', async (req, res) => {
   });
 
 
-
-
 app.get('/logout', (req, res) => {
     res.render('pages/logout'); 
 });
