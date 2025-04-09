@@ -1,5 +1,3 @@
--- Create database for the appointment scheduling system
-
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   user_id SERIAL PRIMARY KEY,
