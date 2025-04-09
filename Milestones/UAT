@@ -1,0 +1,155 @@
+User Acceptance Testing (UAT) Plan
+
+Project: ScheduleMe
+Team Name: Schedule Solutions
+Team Number: 1
+Date: April 2025
+Purpose
+
+This User Acceptance Testing (UAT) plan outlines how the ScheduleMe application will be tested by real users to ensure the system meets business requirements and functions properly in real-world scenarios.
+
+Test Environment
+
+Component	Details
+Environment	Localhost (via Docker)
+URL	http://127.0.0.1:3000
+Database	PostgreSQL (football_db)
+Tools Used	Chrome Browser, Postman, Chai HTTP
+Containerization	Docker
+Frontend Stack	HTML, CSS, JavaScript, Bootstrap
+Backend Stack	Node.js with Express
+
+User Acceptance Testers
+Name	    Role	            Type
+Prajin	 Internal Tester	  Developer
+Elkan	 Internal Tester	  Developer
+Yuxian   Internal Tester	  Developer
+Nasen    Internal Tester	  Developer
+Alex     Internal Tester	  Developer
+Lucas    Internal Tester	  Developer
+
+Alexi   Business Perspective	Target User
+Naresh	Customer Perspective	Target User
+Vid     Business Perspective    Target User
+
+
+✅ Feature 1: User Registration (Customer & Business) and login
+
+Description:
+Users (customers or businesses) should be able to register accounts by providing valid credentials. All mandatory fields must be filled and validated.
+
+✔️ Acceptance Criteria
+All mandatory fields (Name, Email, Password, Confirm Password) must be completed.
+Password and confirm password must match.
+Email must be unique and properly formatted.
+Upon success, user should be redirected to the login page.
+User data must be stored in the users table of football_db.
+📊 Test Data
+Role	Name	Email	Password	Confirm Password	Expected Outcome
+Customer	John	john@test.com	Test123!	Test123!	Registration success
+Business	Jane	jane@biz.com	Biz456!	Biz456!	Registration success
+Customer		blank@test.com	1234abcd	1234abcd	Fail - Missing name
+Business	Alex	alex@biz.com	abc123	xyz123	Fail - Password mismatch
+🧪 Test Steps
+Go to /register
+Select role (Customer or Business)
+Input credentials from test data
+Submit the form
+Verify redirection and/or validation messages
+🎯 Expected Results
+Incomplete or invalid data is rejected with an appropriate error message.
+Valid users are redirected to /login and stored in the database.
+
+Login part:
+Description:
+Users must be able to log in with valid credentials and access their role-specific dashboards.
+
+✔️ Acceptance Criteria
+Login form must validate inputs.
+Invalid credentials trigger an error message.
+Valid users are redirected to their dashboards (/home or /biz).
+📊 Test Data
+Email	Password	Expected Outcome
+john@test.com	Test123!	Redirect to /home
+jane@biz.com	Biz456!	Redirect to /biz
+john@test.com	wrongpass	Fail – Invalid credentials
+unknown@test.com	Test123!	Fail – User not registered
+🧪 Test Steps
+Navigate to /login
+Enter email and password from test data
+Submit the form
+Observe redirection or error message
+🎯 Expected Results
+Valid credentials → redirect to correct dashboard
+Invalid credentials → appropriate error shown
+
+
+✅ Feature 2: Google Calendar Integration & Login
+
+📄 Description
+In addition to the standard login functionality, ScheduleMe allows users to authenticate using their Google account via OAuth2 and import their existing Google Calendar events into the ScheduleMe platform. This enables a personalized and dynamic calendar experience for both customers and businesses.
+
+✔️ Acceptance Criteria
+Users must be able to log in via Google.
+Upon successful authentication, the system should request permission to access the user’s Google Calendar.
+Once authorized, upcoming calendar events should be fetched and stored or displayed on the ScheduleMe dashboard.
+Imported events should be viewable and integrated into the ScheduleMe calendar UI.
+The integration must handle token expiry and unauthorized access gracefully.
+📊 Test Data
+User Email	Google Events	Expected Outcome
+alice@gmail.com	Meeting at 10 AM, Gym at 6 PM	Both events imported and displayed on calendar
+bob@gmail.com	(No events today)	Calendar shows “No events found”
+charlie@gmail.com	Event outside app business hours	Event is imported but visually marked differently
+(Revoked Access)	—	Shows authorization error message
+🧪 Test Steps
+Go to /login and click “Sign in with Google”.
+Choose a Google account and authorize access to Google Calendar.
+Upon success, redirect to the user’s dashboard.
+View the ScheduleMe calendar interface.
+Confirm that all events from Google Calendar are displayed.
+Revoke permissions via Google Account settings and retry login.
+🎯 Expected Results
+Users can log in via Google and access their dashboard.
+Calendar data is accurately fetched and mapped into ScheduleMe’s calendar UI.
+Events are clearly shown, with time and description matching Google Calendar entries.
+Proper error handling if access is denied or token is invalid.
+
+
+✅ Feature 3: Appointment Scheduling & Management
+
+📄 Description
+Customers should be able to schedule appointments. Businesses can approve or decline appointment requests.
+
+✔️ Acceptance Criteria
+Customers can select available time slots.
+Appointments are marked as "Pending" upon request.
+Businesses can approve/decline appointments.
+Status is updated in the database and calendar reflects changes.
+📊 Test Data
+Role	Action	Input	Expected Outcome
+Customer	Request appointment	Date/time for haircut	Success – Status: Pending
+Business	View appointment	Click “View Requests”	Sees new request
+Business	Approve appointment	Click “Approve”	Status updated to Approved
+Business	Decline appointment	Click “Decline”	Status updated to Declined
+🧪 Test Steps
+Login as Customer → Go to /calendar
+Choose a service and time slot → Click "Request"
+Login as Business → Navigate to /requests
+Click "Approve" or "Decline" on appointment
+Confirm that status and calendar update correctly
+🎯 Expected Results
+Approved/declined requests reflect proper status.
+Calendar view updates for both users.
+📋 Summary of UAT Results
+
+(To be completed after execution in Week 4)
+Feature	Status (Pass/Fail)	Notes
+User Registration	TBD	
+User Login	TBD	
+Appointment Management	TBD	
+📌 Final Notes
+
+UAT will be conducted using real user flows in a localhost Docker environment.
+Any failed tests will result in immediate bug ticket creation and resolution before final submission.
+Actual outcomes will be logged and added to the final project report.
+
