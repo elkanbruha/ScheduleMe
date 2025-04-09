@@ -1,0 +1,48 @@
+Release Notes – Week 3/21/2025
+
+Date: 3/21/2025
+Release Version: v0.1.0
+Status: Foundational and Ideation phase
+
+Highlights
+This week marked the successful kickoff of our project. The team focused on laying a strong technical and organizational foundation to support development in the upcoming weeks.
+
+Key Milestones Achieved
+- Project Idea Finalized
+- The team collaboratively defined the project concept, objectives, and scope.
+- Environment Setup
+- Created and configured essential starter files:
+- docker-compose.yaml for container orchestration
+- index.js to initiate the core application
+- package.json for dependency management
+- .gitignore to clean up version control
+- Initial README.md with project description
+- Team & Project Planning
+- Defined team roles and responsibilities
+- Drafted a project plan detailing objectives, scope, and timeline
+- Frontend Foundations
+- Started layout and structure using Handlebars.js
+- Created foundational Handlebars templates to support webpage rendering
+- Directory Structure
+- Organized project files into a scalable and modular directory structure
+- Current Structure Overview
+- /ProjectSourceCode
+│
+├── index.js
+├── package.json
+├── docker-compose.yaml
+├── .gitignore
+├── Database
+  |--- init_db.sql
+├── views
+  |--- layouts
+  |--- Media
+  |--- pages
+  |--- partials
+  |--- styles.css
+
+Next Steps:
+Start building out backend logic and database models
+Begin linking Handlebars templates with dynamic content
+Set up routing and middleware in Express
+Define API endpoints and initial database schema
