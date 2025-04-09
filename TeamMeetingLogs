@@ -1,9 +1,19 @@
 Week 1:
 Decisions:
+- We will build the home page, log-in page, and registration page
+- We will create the post and get requests for the log-in and registration in the .js file
+- We will create SQL queries
+- We will look at expanding the scope of our calandar app to include more advanced features
 
 Alternative Actions/Decisions Discussed:
+- In the case that some is struggling to complete their task, we will reassign people from less critical tasks to help them complete the tasks 
+that are more critical.
+- Elkan, Alex, and Yuxiang will be assigned to primarily front-end development while the rest of the team will be assigned to back-end
+development and the creation of documentation. These roles aren't hard rules but rather guilines based on general intrest and skill.
 
 Follow-ups:
+- Continue to improve upon the work that we have done while beginning new features and UI upgrades
+- Start using branches to develop so that we don't mess up work
 
 Week 2:
 Decisions:
