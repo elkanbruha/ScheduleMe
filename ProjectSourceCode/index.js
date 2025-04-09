@@ -80,11 +80,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(bodyParser.json()); // specify the usage of JSON for parsing request body.
 app.use(express.static(path.join(__dirname, 'views')));
 
-
-
-
-
-
 /// Endpoint Config ///
 
 // home
