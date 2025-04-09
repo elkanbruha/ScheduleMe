@@ -4,6 +4,8 @@ Background is a lighter color, while text is a darker color. Accent is the same 
 
 */
 
+@import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+
 /* Root color variables */
 
 :root {
@@ -11,6 +13,7 @@ Background is a lighter color, while text is a darker color. Accent is the same 
     --secondary-color: #000000;
     --accent-color: #849e4b;
     --light-color: #ffffff;
+    --navbar-color: #d7d7d7;
     --light-gray-color: #bbbbbb;
     --gray-color: #7c7c7c;
     --dark-gray-color: #333333;
@@ -20,16 +23,41 @@ Background is a lighter color, while text is a darker color. Accent is the same 
 
 /* Main font and default text style */
 
-@import url('https://fonts.cdnfonts.com/css/sf-pro-display');
-
 body {
     font-family: "SF Pro Display", sans-serif;
     font-optical-sizing: auto;
     font-style: normal;
-    font-variation-settings: "wght" 100;
+    font-variation-settings: "wght" 300;
     height: 100%;
     margin: 0;
     color: var(--primary-color);
+}
+
+body a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+body a:hover {
+    text-decoration: underline;
+}
+
+/* Nav bar */
+
+.navbar {
+    background-color: var(--navbar-color) !important; 
+}
+  
+.nav-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 1.2rem;
+    padding: 10px;
+}
+
+.nav-link:hover {
+    color: var(--accent-color);
+    text-decoration: none;
 }
 
 /* Main title */
