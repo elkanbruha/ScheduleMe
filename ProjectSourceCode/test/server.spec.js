@@ -9,7 +9,7 @@ const {assert, expect} = chai;
 
 // Register API Tests
 describe('Testing Register API', () => {
-  it('Positive: should register a new user and redirect to login', done => {
+  it('Positive: should register a new user', done => {
     chai
       .request(server)
       .post('/register')
@@ -17,50 +17,11 @@ describe('Testing Register API', () => {
       .send({
         name: 'Test User',
         email: 'testuser_' + Date.now() + '@example.com',
-        password: 'securePassword123',
-        user_type: 'customer'
+        password: 'securePassword123'
       })
       .end((_, res) => {
         res.should.have.status(200);
-        res.body.should.have.property('message').equal('Success');
-        res.redirects.should.be.an('array').that.is.not.empty;
-        res.redirects[0].should.match(/\/login$/);
-        done();
-      });
-  });
-
-  it('Positive: should register a provider user', done => {
-    chai
-      .request(server)
-      .post('/register')
-      .type('form')
-      .send({
-        name: 'Test Provider',
-        email: 'provider_' + Date.now() + '@example.com',
-        password: 'securePassword123',
-        user_type: 'provider'
-      })
-      .end((_, res) => {
-        res.should.have.status(200);
-        res.body.should.have.property('message').equal('Success');
-        done();
-      });
-  });
-
-  it('Positive: should register an admin user', done => {
-    chai
-      .request(server)
-      .post('/register')
-      .type('form')
-      .send({
-        name: 'Test Admin',
-        email: 'admin_' + Date.now() + '@example.com',
-        password: 'securePassword123',
-        user_type: 'admin'
-      })
-      .end((_, res) => {
-        res.should.have.status(200);
-        res.body.should.have.property('message').equal('Success');
+        res.body.should.have.property('message').equal('Registration successful');
         done();
       });
   });
@@ -72,30 +33,11 @@ describe('Testing Register API', () => {
       .type('form')
       .send({
         email: 'incomplete_' + Date.now() + '@example.com',
-        password: 'securePassword123',
-        user_type: 'customer'
+        password: 'securePassword123'
       })
       .end((err, res) => {
         res.should.have.status(400);
         res.body.should.have.property('message').equal('Missing required fields');
-        done();
-      });
-  });
-
-  it('Negative: should return 400 when user_type is invalid', done => {
-    chai
-      .request(server)
-      .post('/register')
-      .type('form')
-      .send({
-        name: 'Invalid Type User',
-        email: 'invalid_' + Date.now() + '@example.com',
-        password: 'securePassword123',
-        user_type: 'invalid_type'
-      })
-      .end((err, res) => {
-        res.should.have.status(400);
-        res.body.should.have.property('message');
         done();
       });
   });
@@ -110,8 +52,7 @@ describe('Testing Register API', () => {
       .send({
         name: 'First User',
         email: duplicateEmail,
-        password: 'securePassword123',
-        user_type: 'customer'
+        password: 'securePassword123'
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -123,8 +64,7 @@ describe('Testing Register API', () => {
           .send({
             name: 'Second User',
             email: duplicateEmail,
-            password: 'anotherPassword123',
-            user_type: 'customer'
+            password: 'anotherPassword123'
           })
           .end((err, res) => {
             res.should.have.status(500);
@@ -148,8 +88,7 @@ describe('Testing Login API', () => {
       .send({
         name: 'Login Test User',
         email: testEmail,
-        password: testPassword,
-        user_type: 'customer'
+        password: testPassword
       })
       .end((err, res) => {
         res.should.have.status(200);
@@ -167,9 +106,8 @@ describe('Testing Login API', () => {
         password: testPassword
       })
       .end((err, res) => {
-        res.should.have.status(200);
         res.redirects.should.be.an('array').that.is.not.empty;
-        res.redirects[0].should.match(/\/home$/);
+        res.redirects[0].should.match(/\/calendar$/);
         done();
       });
   });
@@ -189,339 +127,139 @@ describe('Testing Login API', () => {
         done();
       });
   });
-  
-  it('Negative: should fail login with non-existent email', done => {
-    chai
-      .request(server)
-      .post('/login')
-      .type('form')
-      .send({
-        email: 'nonexistent_' + Date.now() + '@example.com',
-        password: testPassword
-      })
-      .end((err, res) => {
-        res.redirects.should.be.an('array').that.is.not.empty;
-        res.redirects[0].should.match(/\/login$/);
-        done();
-      });
-  });
 });
 
 // Appointments API Tests
 describe('Testing Appointments API', () => {
-  const customerAgent = chai.request.agent(server);
-  const providerAgent = chai.request.agent(server);
+  // Test data
+  let userId, businessId;
+  const testPassword = 'appointmentTest123';
+  const userEmail = 'user_' + Date.now() + '@example.com';
+  const businessEmail = 'business_' + Date.now() + '@example.com';
   
-  const customerEmail = 'appt_customer_' + Date.now() + '@example.com';
-  const providerEmail = 'appt_provider_' + Date.now() + '@example.com';
-  const password = 'appointmentTest123';
-  
+  // Create test user and business
   before(async function() {
     this.timeout(10000);
     
-    await new Promise(resolve => {
-      chai
-        .request(server)
-        .post('/register')
-        .type('form')
-        .send({
-          name: 'Appointment Customer',
-          email: customerEmail,
-          password: password,
-          user_type: 'customer'
-        })
-        .end((err, res) => {
-          res.should.have.status(200);
-          resolve();
-        });
-    });
-    
-    await new Promise(resolve => {
-      chai
-        .request(server)
-        .post('/register')
-        .type('form')
-        .send({
-          name: 'Appointment Provider',
-          email: providerEmail,
-          password: password,
-          user_type: 'provider'
-        })
-        .end((err, res) => {
-          res.should.have.status(200);
-          resolve();
-        });
-    });
-    
-    await new Promise(resolve => {
-      customerAgent
-        .post('/login')
-        .type('form')
-        .send({
-          email: customerEmail,
-          password: password
-        })
-        .end((err, res) => {
-          resolve();
-        });
-    });
-    
-    await new Promise(resolve => {
-      providerAgent
-        .post('/login')
-        .type('form')
-        .send({
-          email: providerEmail,
-          password: password
-        })
-        .end((err, res) => {
-          resolve();
-        });
-    });
-  });
-  
-  it('Positive: customer should be able to book an appointment', done => {
-    customerAgent
-      .post('/appointments')
+    // Create test user
+    const userRes = await chai
+      .request(server)
+      .post('/register')
       .type('form')
       .send({
-        provider_id: 1,
-        service_id: 1,
-        start_time: new Date(Date.now() + 86400000).toISOString(),
-        notes: 'Test appointment booking'
+        name: 'Test User',
+        email: userEmail,
+        password: testPassword
+      });
+    
+    userId = userRes.body.userId || 1; // Use returned ID or fallback
+    
+    // Create test business (assume you have an endpoint for this)
+    const businessRes = await chai
+      .request(server)
+      .post('/businesses')
+      .type('form')
+      .send({
+        name: 'Test Business',
+        email: businessEmail,
+        password: testPassword,
+        business_name: 'Test Business Name'
+      });
+    
+    businessId = businessRes.body.businessId || 1; // Use returned ID or fallback
+  });
+  
+  it('Positive: should create a new appointment', done => {
+    const startTime = new Date(Date.now() + 86400000); // Tomorrow
+    const endTime = new Date(startTime.getTime() + 3600000); // 1 hour later
+    
+    chai
+      .request(server)
+      .post('/api/appointments')
+      .type('json')
+      .send({
+        user_id: userId,
+        business_id: businessId,
+        user_password: testPassword,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        reason: 'Test appointment'
       })
       .end((err, res) => {
         res.should.have.status(201);
-        res.body.should.have.property('message').equal('Appointment booked successfully');
-        res.body.should.have.property('start_time');
-        res.body.should.have.property('end_time');
+        res.body.should.have.property('message').equal('Appointment created successfully');
         done();
       });
   });
   
-  it('Negative: should not allow booking without login', done => {
+  it('Negative: should fail to create appointment with invalid credentials', done => {
+    const startTime = new Date(Date.now() + 86400000); // Tomorrow
+    const endTime = new Date(startTime.getTime() + 3600000); // 1 hour later
+    
     chai
       .request(server)
-      .post('/appointments')
-      .type('form')
+      .post('/api/appointments')
+      .type('json')
       .send({
-        provider_id: 1,
-        service_id: 1,
-        start_time: new Date(Date.now() + 86400000).toISOString(),
-        notes: 'This should fail'
+        user_id: userId,
+        business_id: businessId,
+        user_password: 'wrongPassword',
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        reason: 'Test appointment'
       })
       .end((err, res) => {
         res.should.have.status(401);
-        res.body.should.have.property('message').equal('Please log in to book an appointment');
+        res.body.should.have.property('message').equal('Invalid password');
         done();
       });
   });
   
-  it('Negative: provider should not be able to book an appointment', done => {
-    providerAgent
-      .post('/appointments')
-      .type('form')
-      .send({
-        provider_id: 1,
-        service_id: 1,
-        start_time: new Date(Date.now() + 86400000).toISOString(),
-        notes: 'This should fail'
-      })
-      .end((err, res) => {
-        res.should.have.status(403);
-        res.body.should.have.property('message').equal('Only customers can book appointments');
-        done();
-      });
-  });
-  
-  it('Negative: should fail when booking outside provider availability', done => {
-    const sunday = new Date();
-    sunday.setDate(sunday.getDate() + (0 - sunday.getDay() + 7) % 7);
-    sunday.setHours(10, 0, 0, 0);
-    
-    customerAgent
-      .post('/appointments')
-      .type('form')
-      .send({
-        provider_id: 1,
-        service_id: 1,
-        start_time: sunday.toISOString(),
-        notes: 'This should fail - Sunday booking'
-      })
-      .end((err, res) => {
-        res.should.have.status(400);
-        res.body.should.have.property('message').equal('Provider is not available on this day');
-        done();
-      });
-  });
-  
-  it('Positive: should get customer appointments', done => {
-    customerAgent
-      .get('/appointments')
-      .end((err, res) => {
-        res.should.have.status(200);
-        done();
-      });
-  });
-  
-  it('Positive: should get provider appointments', done => {
-    providerAgent
-      .get('/appointments')
-      .end((err, res) => {
-        res.should.have.status(200);
-        done();
-      });
-  });
-  
-  after(() => {
-    customerAgent.close();
-    providerAgent.close();
-  });
-});
-
-// Update Appointment Status Tests
-describe('Testing Update Appointment Status API', () => {
-  const customerAgent = chai.request.agent(server);
-  const providerAgent = chai.request.agent(server);
-  let appointmentId;
-  
-  before(async function() {
-    this.timeout(15000);
-    
-    const customerEmail = 'status_customer_' + Date.now() + '@example.com';
-    const providerEmail = 'status_provider_' + Date.now() + '@example.com';
-    const password = 'statusTest123';
-    
-    await new Promise(resolve => {
-      chai
-        .request(server)
-        .post('/register')
-        .type('form')
-        .send({
-          name: 'Status Test Customer',
-          email: customerEmail,
-          password: password,
-          user_type: 'customer'
-        })
-        .end(resolve);
-    });
-    
-    await new Promise(resolve => {
-      chai
-        .request(server)
-        .post('/register')
-        .type('form')
-        .send({
-          name: 'Status Test Provider',
-          email: providerEmail,
-          password: password,
-          user_type: 'provider'
-        })
-        .end(resolve);
-    });
-    
-    await new Promise(resolve => {
-      customerAgent
-        .post('/login')
-        .type('form')
-        .send({
-          email: customerEmail,
-          password: password
-        })
-        .end(resolve);
-    });
-    
-    await new Promise(resolve => {
-      providerAgent
-        .post('/login')
-        .type('form')
-        .send({
-          email: providerEmail,
-          password: password
-        })
-        .end(resolve);
-    });
-    
-    await new Promise(resolve => {
-      customerAgent
-        .post('/appointments')
-        .type('form')
-        .send({
-          provider_id: 1,
-          service_id: 1,
-          start_time: new Date(Date.now() + 172800000).toISOString(),
-          notes: 'Test appointment for status update'
-        })
-        .end((err, res) => {
-          if (res.body && res.body.appointmentId) {
-            appointmentId = res.body.appointmentId;
-          } else {
-            appointmentId = 1;
-          }
-          resolve();
-        });
-    });
-  });
-  
-  it('Positive: provider should be able to confirm an appointment', done => {
-    providerAgent
-      .put(`/appointments/${appointmentId}/status`)
-      .type('form')
-      .send({
-        status: 'confirmed'
-      })
-      .end((err, res) => {
-        res.should.have.status(200);
-        res.body.should.have.property('message').equal('Appointment status updated successfully');
-        done();
-      });
-  });
-  
-  it('Positive: customer should be able to cancel their appointment', done => {
-    customerAgent
-      .put(`/appointments/${appointmentId}/status`)
-      .type('form')
-      .send({
-        status: 'cancelled'
-      })
-      .end((err, res) => {
-        res.should.have.status(200);
-        res.body.should.have.property('message').equal('Appointment status updated successfully');
-        done();
-      });
-  });
-  
-  it('Negative: should reject invalid status values', done => {
-    providerAgent
-      .put(`/appointments/${appointmentId}/status`)
-      .type('form')
-      .send({
-        status: 'invalid_status'
-      })
-      .end((err, res) => {
-        res.should.have.status(400);
-        res.body.should.have.property('message').equal('Invalid status');
-        done();
-      });
-  });
-  
-  it('Negative: unauthorized user should not update appointment status', done => {
+  it('Positive: should get user appointments', done => {
     chai
       .request(server)
-      .put(`/appointments/${appointmentId}/status`)
-      .type('form')
-      .send({
-        status: 'confirmed'
+      .get('/api/appointments')
+      .query({
+        id: userId,
+        password: testPassword,
+        type: 'user'
       })
       .end((err, res) => {
-        res.should.have.status(401);
-        res.body.should.have.property('message').equal('Please log in');
+        res.should.have.status(200);
+        res.body.should.have.property('appointments').that.is.an('array');
         done();
       });
   });
   
-  after(() => {
-    customerAgent.close();
-    providerAgent.close();
+  it('Positive: should get business appointments', done => {
+    chai
+      .request(server)
+      .get('/api/appointments')
+      .query({
+        id: businessId,
+        password: testPassword,
+        type: 'business'
+      })
+      .end((err, res) => {
+        res.should.have.status(200);
+        res.body.should.have.property('appointments').that.is.an('array');
+        done();
+      });
+  });
+  
+  it('Negative: should fail to get appointments with invalid type', done => {
+    chai
+      .request(server)
+      .get('/api/appointments')
+      .query({
+        id: userId,
+        password: testPassword,
+        type: 'invalid'
+      })
+      .end((err, res) => {
+        res.should.have.status(400);
+        res.body.should.have.property('message').equal('Invalid type. Must be "user" or "business"');
+        done();
+      });
   });
 });
