@@ -35,13 +35,11 @@ const dbConfig = {
 
 const db = pgp(dbConfig);
 
-// 初始化数据库
 const initDB = async () => {
   try {
     await db.connect();
     console.log('Database connection successful');
 
-    // 创建所有表
     await db.none(`
       CREATE TABLE IF NOT EXISTS users (
         user_id SERIAL PRIMARY KEY,
@@ -116,7 +114,6 @@ const initDB = async () => {
       );
     `);
 
-    // 创建索引
     await db.none(`
       CREATE INDEX IF NOT EXISTS idx_appointments_customer ON appointments(customer_id);
       CREATE INDEX IF NOT EXISTS idx_appointments_provider ON appointments(provider_id);
@@ -180,58 +177,64 @@ app.get('/register', (req, res) => {
     res.render('pages/Register'); 
 });
 
-app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({ message: 'Invalid input' });
-    }
-    //hash the password using bcrypt library
-    const hash = await bcrypt.hash(req.body.password, 10);
-
-    // To-DO: Insert username and hashed password into the 'users' table
-    db.none('INSERT INTO Users(username, password) VALUES($1, $2)', [req.body.username, hash])
-      .then(() => {
-        res.status(200).json({ message: 'Success' });
-        res.redirect('/login');
-      })
-      .catch(error => {
-        console.log(error);
-        res.status(500).json({ message: 'Database error' });
-        res.redirect('/register');
-      }); 
-  });
-
-
 app.get('/login', (req, res) => {
     //do something
     res.render('pages/login');
   });
 
-app.post('/login', async (req, res) => {
-    // To-DO: Query the 'users' table to find the user with the username from the request
-    const user = await db.oneOrNone(`SELECT * FROM Users WHERE user_id = $1`, [req.body.User_id]);
-    // check if password from request matches with password in DB
-    console.log(user);
-    if (!user) {
-      console.log('not found');
+// MODIFIED REGISTER TO INCLUDE NEW PARAMETERS
+app.post('/register', async (req, res) => {
+  const { name, email, password, user_type } = req.body;
+
+  if (!name || !email || !password || !user_type) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+  
+  // Hash the password
+  const hash = await bcrypt.hash(password, 10);
+
+  // Insert into users table with correct fields from SQL schema
+  db.none('INSERT INTO users(name, email, password, user_type) VALUES($1, $2, $3, $4)', 
+         [name, email, hash, user_type])
+    .then(() => {
+      res.status(200).json({ message: 'Registration successful' });
       res.redirect('/login');
-    }
-    else {
-      const match = await bcrypt.compare(req.body.password, user.password);
-      if (!match) {
+    })
+    .catch(error => {
+      console.log(error);
+      res.status(500).json({ message: 'Database error' });
+    }); 
+});
 
-        res.redirect('/login');
-        console.log('Invalid username or password');
 
-      } 
-      else {
-        //save user details in session like in lab 7
-        req.session.user = user;
-        req.session.save();
-        res.redirect('/home');
-      }}
-  });
+app.get('/login', (req, res) => {
+  //do something
+  res.render('pages/login');
+});
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await db.oneOrNone(`SELECT * FROM users WHERE email = $1`, [email]);
+
+  if (!user) {
+    console.log('User not found');
+    return res.redirect('/login');
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) {
+    console.log('Invalid password');
+    return res.redirect('/login');
+  } 
+
+  // Save user details in session
+  req.session.user = user;
+  req.session.save();
+
+  // REDIRECTS TO CALENDAR, IS IT OK?
+  res.redirect('/calendar');
+});
 
 
 app.get('/logout', (req, res) => {
@@ -245,9 +248,6 @@ app.get('/calendar', (req, res) => {
 app.get('/appointments', (req, res) => {
     res.render('pages/appointments'); 
 });
-
-
-
 
 
 /// End Endpoint Config ///
