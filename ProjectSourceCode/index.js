@@ -183,19 +183,20 @@ app.get('/login', (req, res) => {
   });
 
 // MODIFIED REGISTER TO INCLUDE NEW PARAMETERS
+// Register route
 app.post('/register', async (req, res) => {
-  const { name, email, password, user_type } = req.body;
-
-  if (!name || !email || !password || !user_type) {
+  const { name, email, password } = req.body;
+  
+  if (!name || !email || !password) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
   
   // Hash the password
   const hash = await bcrypt.hash(password, 10);
-
-  // Insert into users table with correct fields from SQL schema
-  db.none('INSERT INTO users(name, email, password, user_type) VALUES($1, $2, $3, $4)', 
-         [name, email, hash, user_type])
+  
+  // Insert into users table with only the required fields
+  db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
+    [name, email, hash])
     .then(() => {
       res.status(200).json({ message: 'Registration successful' });
       res.redirect('/login');
@@ -203,36 +204,32 @@ app.post('/register', async (req, res) => {
     .catch(error => {
       console.log(error);
       res.status(500).json({ message: 'Database error' });
-    }); 
+    });
 });
 
-
-app.get('/login', (req, res) => {
-  //do something
-  res.render('pages/login');
-});
-
+// Login route
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-
+  
   const user = await db.oneOrNone(`SELECT * FROM users WHERE email = $1`, [email]);
-
+  
   if (!user) {
     console.log('User not found');
     return res.redirect('/login');
   }
-
+  
   const match = await bcrypt.compare(password, user.password);
+  
   if (!match) {
     console.log('Invalid password');
     return res.redirect('/login');
-  } 
-
+  }
+  
   // Save user details in session
   req.session.user = user;
   req.session.save();
-
-  // REDIRECTS TO CALENDAR, IS IT OK?
+  
+  // Redirect to calendar page
   res.redirect('/calendar');
 });
 
