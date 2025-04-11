@@ -211,6 +211,11 @@ app.get('/calendar', (req, res) => {
     res.render('pages/Calendar'); 
 });
 
+app.get('/help', (req, res) => {
+  res.render('pages/help'); 
+});
+
+
 app.post('/appointments', async (req, res) => {
   // Check if user is logged in
   if (!req.session.user || !req.session.userType) {
