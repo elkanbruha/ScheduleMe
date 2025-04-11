@@ -1,4 +1,5 @@
 // Import dependencies
+require('dotenv').config();
 const express = require('express'); // To build an application server or API
 const app = express();
 const handlebars = require('express-handlebars');
@@ -22,7 +23,7 @@ const hbs = handlebars.create({
 
 
 // database configuration
-//require('dotenv').config();
+
 
 const dbConfig = {
   host: process.env.DB_HOST || 'db',
@@ -33,6 +34,7 @@ const dbConfig = {
 };
 
 const db = pgp(dbConfig);
+initDB();
 
 const initDB = async () => {
   let connection;
