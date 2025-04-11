@@ -1,5 +1,4 @@
 // Import dependencies
-require('dotenv').config();
 const express = require('express'); // To build an application server or API
 const app = express();
 const handlebars = require('express-handlebars');
@@ -26,67 +25,88 @@ const hbs = handlebars.create({
 
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'db',
-  port: parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.POSTGRES_DB || 'appdb',
-  user: process.env.POSTGRES_USER || 'appuser',
-  password: process.env.POSTGRES_PASSWORD || 'secret',
+    host: 'db',  
+    port: 5432,  
+    database: process.env.POSTGRES_DB,
+    user: process.env.POSTGRES_USER,
+    password: process.env.POSTGRES_PASSWORD,
+    max: 30,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+    ssl: false
 };
-
-const db = pgp(dbConfig);
-initDB();
-
-const initDB = async () => {
-  let connection;
-  try {
-    connection = await db.connect();
-    await db.one('SELECT 1');
-    console.log('Database connection successful');
-
-    await db.tx(async t => {
-      await t.none(`
-        CREATE TABLE IF NOT EXISTS users (
-          user_id SERIAL PRIMARY KEY,
-          name VARCHAR(100) NOT NULL,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL
-        )`);
-
-      await t.none(`
-        CREATE TABLE IF NOT EXISTS businesses (
-          business_id SERIAL PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          password VARCHAR(255) NOT NULL,
-          business_name VARCHAR(255) NOT NULL
-        )`);
-
-      await t.none(`
-        CREATE TABLE IF NOT EXISTS appointments (
-          appointment_id SERIAL PRIMARY KEY,
-          business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
-          user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-          start_time TIMESTAMP NOT NULL,
-          end_time TIMESTAMP NOT NULL,
-          reason TEXT,
-          CHECK (start_time < end_time)
-        )`);
-
-      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)');
-      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_business ON appointments(business_id)');
-      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time)');
-    });
-
-    console.log('Tables and indexes created');
-  } catch (error) {
-    console.error('DB initialization failed:', error.stack || error);
-    process.exit(1);
-  } finally {
-    if (connection) connection.done();
-  }
-};
-
-module.exports = { db, initDB };
+  
+  // Create database connection
+  const db = pgp(dbConfig);
+  
+  // Test database connection
+  const testConnection = async () => {
+    try {
+      await db.one('SELECT 1');
+      console.log('Database connection successful');
+      return true;
+    } catch (error) {
+      console.error('Database connection failed:', error);
+      return false;
+    }
+  };
+  
+  // Initialize database
+  const initDB = async () => {
+    try {
+      const isConnected = await testConnection();
+      if (!isConnected) {
+        throw new Error('Database connection failed');
+      }
+  
+      // Check if tables exist, create if they don't
+      await db.tx(async t => {
+        await t.none(`
+          CREATE TABLE IF NOT EXISTS users (
+            user_id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL
+          )
+        `);
+  
+        await t.none(`
+          CREATE TABLE IF NOT EXISTS businesses (
+            business_id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            business_name VARCHAR(255) NOT NULL
+          )
+        `);
+  
+        await t.none(`
+          CREATE TABLE IF NOT EXISTS appointments (
+            appointment_id SERIAL PRIMARY KEY,
+            business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            start_time TIMESTAMP NOT NULL,
+            end_time TIMESTAMP NOT NULL,
+            reason TEXT,
+            CHECK (start_time < end_time)
+          )
+        `);
+  
+        // Create indexes
+        await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)');
+        await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_business ON appointments(business_id)');
+        await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time)');
+      });
+  
+      console.log('Database initialization completed');
+    } catch (error) {
+      console.error('Database initialization failed:', error);
+      process.exit(1);
+    }
+  };
+  
+  // Initialize database
+  initDB();
 
 
 // Register `hbs` as our view engine using its bound `engine()` function.
