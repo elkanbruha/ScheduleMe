@@ -1,3 +1,12 @@
+DO
+$do$
+BEGIN
+   IF NOT EXISTS (
+      SELECT FROM pg_catalog.pg_roles WHERE rolname = 'appuser') THEN
+      CREATE USER appuser WITH PASSWORD 'secret';
+   END IF;
+END
+$do$;
 \c appdb
 
 GRANT ALL PRIVILEGES ON DATABASE appdb TO appuser;

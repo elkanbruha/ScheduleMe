@@ -159,24 +159,38 @@ app.get('/login', (req, res) => {
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
   
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Missing required fields' });
-  }
+  try {
+    
+    if (!name || !email || !password) {
+      return res.status(400).render('pages/Register', { 
+        error: 'All fields are required' 
+      });
+    }
+    
+    
+    const existingUser = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
+    if (existingUser) {
+      return res.status(400).render('pages/Register', { 
+        error: 'Email already registered' 
+      });
+    }
+    
+    
+    const hash = await bcrypt.hash(password, 10);
+    
   
-  // Hash the password
-  const hash = await bcrypt.hash(password, 10);
-  
-  // Insert into users table with only the required fields
-  db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
-    [name, email, hash])
-    .then(() => {
-      res.status(200).json({ message: 'Registration successful' });
-      res.redirect('/login');
-    })
-    .catch(error => {
-      console.log(error);
-      res.status(500).json({ message: 'Database error' });
+    await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
+      [name, email, hash]);
+    
+    
+    return res.redirect('/login');
+    
+  } catch (error) {
+    console.error('Registration error:', error);
+    return res.status(500).render('pages/Register', { 
+      error: 'Registration failed. Please try again.' 
     });
+  }
 });
 
 app.post('/login', async (req, res) => {
