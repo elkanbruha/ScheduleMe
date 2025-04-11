@@ -1,3 +1,9 @@
+\c appdb
+
+GRANT ALL PRIVILEGES ON DATABASE appdb TO appuser;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO appuser;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO appuser;
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
   user_id SERIAL PRIMARY KEY,
@@ -27,6 +33,6 @@ CREATE TABLE IF NOT EXISTS appointments (
 );
 
 -- Create indexes for common queries
-CREATE INDEX idx_appointments_user ON appointments(user_id);
-CREATE INDEX idx_appointments_business ON appointments(business_id);
-CREATE INDEX idx_appointments_date ON appointments(start_time);
+CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_business ON appointments(business_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time);
