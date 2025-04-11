@@ -22,7 +22,7 @@ const hbs = handlebars.create({
 
 
 // database configuration
-require('dotenv').config();
+//require('dotenv').config();
 
 const dbConfig = {
   host: process.env.DB_HOST || 'db',
