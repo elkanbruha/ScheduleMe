@@ -1,0 +1,38 @@
+Release Notes – Week 4/4/2025
+
+Date: 4/4/2025
+Release Version: v0.1.1
+Status: More Foundation Building
+
+Highlights
+This week is extra long due to spring break but, we still got a lot done. We are still in the foundational phase of the project, but we have made significant progress in setting up our development environment and starting to build out the application structure.
+We have also made some progress on the database schema and initial API endpoints.
+We are still in the process of finalizing the project scope and objectives, but we are on track to start building out the application logic in the coming weeks.
+
+
+Key Milestones Achieved
+- Finished first version of sighn up API endpoint
+- Finished first version of login API endpoint
+- further polished header and footer
+- Updated README.md with more detailed project description and setup instructions
+- Updated directory structure to include a separate folder for new media assets
+- completed home page layout and design
+- Created initial CSS styles for the application
+- Started database building process
+- bult upon docker-compose.yaml to include a database service
+- created and polished login and sign up pages
+
+Next Steps:
+Start testing code that we have written 
+Work on the the pages for users and businesses
+build out calandar and scheduling features
+connect with apple calendar and google calendar api's
+respond to any feedback from the team, users, and stakeholders
+Project Idea Finalized
+build out additional API endpoints for user and business profiles
+Start building out the calendar and scheduling features
+revaluate and reorganize team roles to have adequate resources dedicated to the right tasks
+
+We have some Pictures!!! (look in the rest of the folder)
+
+
