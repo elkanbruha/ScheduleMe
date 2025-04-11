@@ -5,7 +5,7 @@ services:
     expose:
       - '5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # 修改这里
+      - postgres_data:/var/lib/postgresql/data  
       - ./database/init_db.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
