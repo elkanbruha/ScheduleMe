@@ -20,6 +20,10 @@ const hbs = handlebars.create({
     partialsDir: __dirname + '/views/partials',
   });
 
+
+// database configuration
+//require('dotenv').config();
+
 const dbConfig = {
   host: process.env.DB_HOST || 'db',
   port: parseInt(process.env.DB_PORT) || 5432,
