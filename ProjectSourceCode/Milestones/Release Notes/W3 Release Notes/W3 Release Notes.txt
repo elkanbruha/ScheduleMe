@@ -1,0 +1,35 @@
+Release Notes – Week 4/11/2025
+
+Date: 4/11/2025
+Release Version: v0.1.3
+Status: Application Building and polish up
+
+Highlights
+Thank you all for your patience! We are now caught up with the weekly release notes!
+
+Key Milestones Achieved
+- Wrote Test cases using Chai
+- Testing is working well
+- Wrote a User Acceptance Testing plan to test our key features
+- Reassigned Team roles
+- Re polished index.js files
+    - Edited api's to be cleaner and more efficient
+    - Api endpoint now can be used for testing purposes
+- Started the integration of Apple calandar into our services
+- Started work on user end and business end UI's
+- created business list API
+- Reworked sql
+    - SQL wasn't built to properly adress our new needs, so we had to rework the structure of the database
+- Created help page
+- updated register page to include more parameters
+
+
+
+Next Steps:
+- Finish up the applications for the customer end and user end
+- test that apple calandar API is properly connecting with our app
+- Create get and post request to get data from database to fill calandar
+- create about us page
+- Start creating presentation
+
+We have some Pictures!!! (look in the W3 release notes folder)
