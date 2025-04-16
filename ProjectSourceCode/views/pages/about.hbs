@@ -1,2 +1,113 @@
 {{> head}}
-{{> nav}}
+<!DOCTYPE html>
+<html lang="en">
+<div class="abt_container">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1 class="abt-heading">About Us</h1>
+  <div class="team-container">
+    <div class="team-member">
+      <h3>Alex Schwarz</h3>
+      <p>alsc3632@colorado.edu</p>
+      <p>Role: Front End</p>
+      <button class="btn" onclick="togglePopup('popup1')">Contributions</button>
+      <div id="popup1" class="popup">
+        <ul>
+            <li>Login Page</li>
+            <li>Register Page</li>
+            <li>Navigation Bar</li>
+            <li>This Page</li>
+            <li>Calendar Page</li>
+        </ul>
+      </div>
+
+    </div>
+    <div class="team-member">
+      <h3>Elkan Bruha</h3>
+      <p>email2@email.com</p><!--email here-->
+      <p>Role: Filler till yall fill it</p><!--role here-->
+      <button class="btn" onclick="togglePopup('popup2')">Contributions</button>
+      <div id="popup2" class="popup">
+        <ul><!--contributions here, feel free to add or remove lines as needed-->
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+        </ul>
+      </div>
+    </div>
+    <div class="team-member">
+      <h3>Lucas Williamson</h3>
+      <p>email3@email.com</p><!--email here-->
+      <p>Role: Filler till yall fill it</p><!--role here-->
+      <button class="btn" onclick="togglePopup('popup3')">Contributions</button>
+      <div id="popup3" class="popup">
+        <ul><!--contributions here, feel free to add or remove lines as needed-->
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+        </ul>
+      </div>
+    </div>
+    <div class="team-member">
+      <h3>Nasen Alm</h3>
+      <p>email4@email.com</p><!--email here-->
+      <p>Role: Filler till yall fill it</p><!--role here-->
+      <button class="btn" onclick="togglePopup('popup4')">Contributions</button>
+      <div id="popup4" class="popup">
+        <ul><!--contributions here, feel free to add or remove lines as needed-->
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+        </ul>
+      </div>
+    </div>
+    <div class="team-member">
+      <h3>Prajinkumar Suresh Kannan</h3>
+      <p>email5@email.com</p><!--email here-->
+      <p>Role: Filler till yall fill it</p><!--role here-->
+      <button class="btn" onclick="togglePopup('popup5')">Contributions</button>
+      <div id="popup5" class="popup">
+        <ul><!--contributions here, feel free to add or remove lines as needed-->
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+        </ul>
+      </div>
+    </div>
+    <div class="team-member">
+      <h3>Yuxiang Wang</h3>
+      <p>email6@email.com</p><!--email here-->
+      <p>Role: Filler till yall fill it</p><!--role here-->
+      <button class="btn" onclick="togglePopup('popup6')">Contributions</button>
+      <div id="popup6" class="popup">
+        <ul><!--contributions here, feel free to add or remove lines as needed-->
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+            <li>Filler till yall fill it</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function togglePopup(id) {
+      var popup = document.getElementById(id);
+      popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+    }
+  </script>
+</body>
+</div>
+</html>
