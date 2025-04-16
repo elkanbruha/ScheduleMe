@@ -350,6 +350,42 @@ app.get('/businesses', async (req, res) => {
   }
 });
 
+
+// for iCalendar Downloads
+router.get('/download-ics/:appointmentId', async (req, res) => {
+  const appointmentId = req.params.appointmentId;
+
+  // Replace this with your DB query to get appointment by ID
+  const appointment = await getAppointmentFromDatabase(appointmentId); // <- you write this function
+
+  if (!appointment) {
+    return res.status(404).send('Appointment not found');
+  }
+
+  const filePath = path.join(__dirname, `../temp/appointment-${appointmentId}.ics`);
+  
+  try {
+    await generateIcsFile(appointment, filePath);
+    res.download(filePath, `appointment-${appointmentId}.ics`, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).send('Error downloading file');
+      } else {
+        // Optional: Delete file after download
+        fs.unlink(filePath, () => {});
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to generate ICS file');
+  }
+});
+
+// unsure if lines below are needed
+//module.exports = router;
+//const icsRoutes = require('./routes/ics');
+//app.use('/', icsRoutes);
+
 /// End Endpoint Config ///
 
 
