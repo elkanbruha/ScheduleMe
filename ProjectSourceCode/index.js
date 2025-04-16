@@ -154,6 +154,10 @@ app.get('/login', (req, res) => {
     res.render('pages/login');
   });
 
+  app.get('/about', (req, res) => {
+    res.render('pages/about'); 
+});
+
 // MODIFIED REGISTER TO INCLUDE NEW PARAMETERS
 // Register route
 app.post('/register', async (req, res) => {
