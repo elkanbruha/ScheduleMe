@@ -25,16 +25,17 @@ const hbs = handlebars.create({
 
 
 const dbConfig = {
-    host: 'db',  
-    port: 5432,  
-    database: process.env.POSTGRES_DB,
-    user: process.env.POSTGRES_USER,
-    password: process.env.POSTGRES_PASSWORD,
-    max: 30,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-    ssl: false
+  host: process.env.POSTGRES_HOST,
+  port: parseInt(process.env.POSTGRES_PORT) || 5432,
+  database: process.env.POSTGRES_DB,
+  user: process.env.POSTGRES_USER,
+  password: process.env.POSTGRES_PASSWORD,
+  max: 30,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  ssl: false
 };
+
   
   // Create database connection
   const db = pgp(dbConfig);
