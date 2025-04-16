@@ -352,7 +352,7 @@ app.get('/businesses', async (req, res) => {
 
 
 // for iCalendar Downloads
-router.get('/download-ics/:appointmentId', async (req, res) => {
+app.get('/download-ics/:appointmentId', async (req, res) => {
   const appointmentId = req.params.appointmentId;
 
   // Replace this with your DB query to get appointment by ID
