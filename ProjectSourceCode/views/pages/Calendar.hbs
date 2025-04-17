@@ -31,8 +31,7 @@
             <label for="business_id" class="form-label">Select Business</label>
             <select class="form-select" id="business_id" required>
               <option value="">Select a business</option>
-              <option value="google">Google</option>
-              <option value="amazon">Amazon</option>
+              <!-- Businesses will be loaded dynamically -->
             </select>
           </div>
           <div class="mb-3">
@@ -56,4 +55,111 @@
     </div>
   </div>
 </div>
-<script src="/js/calendar.js"></script>
+<script>
+  // Fetch businesses when the page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    fetchBusinesses();
+  });
+
+  // Function to fetch businesses from the API
+  function fetchBusinesses() {
+    fetch('/businesses')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Get the select element
+        const businessSelect = document.getElementById('business_id');
+        
+        // Clear any existing options except the first one
+        while (businessSelect.options.length > 1) {
+          businessSelect.remove(1);
+        }
+        
+        // Add businesses from the API to the select element
+        if (data.businesses && data.businesses.length > 0) {
+          data.businesses.forEach(business => {
+            const option = document.createElement('option');
+            option.value = business.business_id;
+            option.textContent = business.business_name || business.name;
+            businessSelect.appendChild(option);
+          });
+        } else {
+          // Add a message if no businesses are available
+          const option = document.createElement('option');
+          option.value = "";
+          option.textContent = "No businesses available";
+          option.disabled = true;
+          businessSelect.appendChild(option);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching businesses:', error);
+        // Add a fallback option if the API call fails
+        const businessSelect = document.getElementById('business_id');
+        const option = document.createElement('option');
+        option.value = "";
+        option.textContent = "Error loading businesses";
+        option.disabled = true;
+        businessSelect.appendChild(option);
+      });
+  }
+
+  // Function to save the event/appointment
+  function saveEvent() {
+    const businessId = document.getElementById('business_id').value;
+    const startTime = document.getElementById('start_time').value;
+    const endTime = document.getElementById('end_time').value;
+    const reason = document.getElementById('reason').value;
+    
+    // Validate form
+    if (!businessId || !startTime || !endTime) {
+      alert('Please fill out all required fields');
+      return;
+    }
+    
+    // Create the appointment data
+    const appointmentData = {
+      business_id: businessId,
+      start_time: startTime,
+      end_time: endTime,
+      reason: reason
+    };
+    
+    // Send the data to the server
+    fetch('/appointments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(appointmentData)
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => {
+          throw new Error(data.message || 'Failed to create appointment');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Close the modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('event_modal'));
+      modal.hide();
+      
+      // Reset the form
+      document.getElementById('appointmentForm').reset();
+      
+      // Optionally refresh the calendar or show a success message
+      alert('Appointment created successfully');
+      // You could also reload appointments here
+    })
+    .catch(error => {
+      console.error('Error creating appointment:', error);
+      alert(error.message || 'An error occurred while creating the appointment');
+    });
+  }
+</script>
