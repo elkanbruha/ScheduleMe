@@ -1,55 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login Page</title>
-    <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login Page</title>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div class="wrapper">
-        <div class="login-container">
-            <h2>Welcome Back!</h2>
-            <p>Please log in to continue</p>
-            <form action="/login" method="POST">
-                <input type="text" name="username" placeholder="Username" required />
-                <input type="password" name="password" placeholder="Password" required />
-
-                <!-- Customer/Business Toggle -->
-                <div class="toggle-wrapper">
-                    <label class="toggle">
-                        <div class="toggle-label-container">
-                            <span class="toggle-label customer">Customer</span>
-                            <span class="toggle-label business">Business</span>
-                        </div>
-                        <input type="checkbox" name="accountType" value="provider" id="accountTypeToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <button type="submit">Log In</button>
-            </form>
-            <p>Don't have an account? <a href="/register">Sign Up</a></p>
-        </div>
-    </div>
-
-    <script>
-        const toggle = document.querySelector('#accountTypeToggle');
-        const customerLabel = document.querySelector('.customer');
-        const businessLabel = document.querySelector('.business');
-
-        
-        toggle.value = 'customer'; // Default value is 'customer' when the checkbox is unchecked
-
-        // Toggle event listener to update the checkbox value dynamically
-        toggle.addEventListener("change", () => {
-            if (toggle.checked) {
-                toggle.value = 'provider'; // When checked, set value to 'provider'
-                businessLabel.classList.add("highlight");
-                customerLabel.classList.remove("highlight");
-            } else {
-                toggle.value = 'customer'; // When unchecked, set value to 'customer'
-                customerLabel.classList.add("highlight");
-                businessLabel.classList.remove("highlight");
-            }
-        }
+<div class="wrapper">
+  <div class="login-container">
+    <h2>Welcome Back!</h2>
+    <p>Please log in to continue</p>
+    <form action="/login" method="POST">
+      <input type="text" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Password" required />
+      <!-- Added hidden input for type field -->
+      <input type="hidden" name="type" id="accountType" value="user" />
+      
+      <!-- Customer/Business Toggle -->
+      <div class="toggle-wrapper">
+        <label class="toggle">
+          <div class="toggle-label-container">
+            <span class="toggle-label customer highlight">Customer</span>
+            <span class="toggle-label business">Business</span>
+          </div>
+          <input type="checkbox" id="accountTypeToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <button type="submit">Log In</button>
+    </form>
+    <p>Don't have an account? <a href="/register">Sign Up</a></p>
+  </div>
+</div>
+<script>
+  const toggle = document.querySelector('#accountTypeToggle');
+  const customerLabel = document.querySelector('.customer');
+  const businessLabel = document.querySelector('.business');
+  const accountTypeInput = document.querySelector('#accountType');
+  
+  // Set default highlighting
+  customerLabel.classList.add("highlight");
+  
+  // Toggle event listener to update the hidden input value dynamically
+  toggle.addEventListener("change", () => {
+    if (toggle.checked) {
+      accountTypeInput.value = 'business'; // Match API's expected value
+      businessLabel.classList.add("highlight");
+      customerLabel.classList.remove("highlight");
+    } else {
+      accountTypeInput.value = 'user'; // Match API's expected value
+      customerLabel.classList.add("highlight");
+      businessLabel.classList.remove("highlight");
+    }
+  });
+</script>
+</body>
+</html>

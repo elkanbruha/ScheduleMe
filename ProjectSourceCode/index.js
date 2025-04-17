@@ -15,11 +15,22 @@ const axios = require('axios'); // To make HTTP requests from our server.
 
 /// Handlebars config
 const hbs = handlebars.create({
-    extname: 'hbs',
-    layoutsDir: __dirname + '/views/layouts',
-    partialsDir: __dirname + '/views/partials',
-  });
-
+  extname: 'hbs',
+  layoutsDir: __dirname + '/views/layouts',
+  partialsDir: __dirname + '/views/partials',
+  // Add helpers here
+  helpers: {
+      // Register the array helper to create arrays in templates
+      array: function() {
+          return Array.prototype.slice.call(arguments, 0, -1);
+      },
+      // Register the lower helper to convert strings to lowercase
+      lower: function(str) {
+          return str.toLowerCase();
+      }
+      // You can add other custom helpers here as needed
+  }
+});
 
 // database configuration
 
