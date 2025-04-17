@@ -1,62 +1,71 @@
 {{> message}}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Register Page</title>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="toggle.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Register Page</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="toggle.css" />
 </head>
 <body>
-    <div class="wrapper">
-        <div class="login-container">
-            <h2>Welcome To ScheduleMe!</h2>
-            <p>Please sign up to continue</p>
-            <form action="/register" method="POST">
-                <input type="text" name="name" placeholder="Full Name" required />
-                <input type="text" name="email" placeholder="Email" required />
-                <input type="password" name="password" placeholder="Password" required />
+<div class="wrapper">
+<div class="login-container">
+<h2>Welcome To ScheduleMe!</h2>
+<p>Please sign up to continue</p>
+<form action="/register" method="POST">
+<input type="text" name="name" placeholder="Full Name" required />
+<input type="text" name="email" placeholder="Email" required />
+<input type="password" name="password" placeholder="Password" required />
 
-                <!-- Customer/Business Toggle -->
-                <div class="toggle-wrapper">
-                    <label class="toggle">
-                        <div class="toggle-label-container">
-                            <span class="toggle-label customer">Customer</span>
-                            <span class="toggle-label business">Business</span>
-                        </div>
-                        <input type="checkbox" name="accountType" value="provider" id="accountTypeToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
+<!-- Hidden input for account type -->
+<input type="hidden" name="type" id="accountType" value="user" />
 
-                <button type="submit">Sign Up</button>
-            </form>
-            <p>Already have an account? <a href="/login">Log in</a></p>
-        </div>
-    </div>
+<!-- Business Name field (initially hidden) -->
+<div id="businessNameField" style="display:none;">
+<input type="text" name="business_name" placeholder="Business Name" required />
+</div>
 
-    <script>
-        const toggle = document.querySelector('#accountTypeToggle');
-        const customerLabel = document.querySelector('.customer');
-        const businessLabel = document.querySelector('.business');
+<!-- Customer/Business Toggle -->
+<div class="toggle-wrapper">
+<label class="toggle">
+<div class="toggle-label-container">
+<span class="toggle-label customer">Customer</span>
+<span class="toggle-label business">Business</span>
+</div>
+<input type="checkbox" id="accountTypeToggle">
+<span class="slider"></span>
+</label>
+</div>
+<button type="submit">Sign Up</button>
+</form>
+<p>Already have an account? <a href="/login">Log in</a></p>
+</div>
+</div>
+<script>
+const toggle = document.querySelector('#accountTypeToggle');
+const customerLabel = document.querySelector('.customer');
+const businessLabel = document.querySelector('.business');
+const accountTypeInput = document.querySelector('#accountType');
+const businessNameField = document.querySelector('#businessNameField');
 
-        // Initialize the value to 'customer' by default when unchecked
-        toggle.value = 'customer';
+// Set default highlighting
+customerLabel.classList.add("highlight");
 
-        // Toggle event listener to update the checkbox value dynamically
-        toggle.addEventListener("change", () => {
-            if (toggle.checked) {
-                toggle.value = 'provider'; // When checked, set value to 'provider'
-                businessLabel.classList.add("highlight");
-                customerLabel.classList.remove("highlight");
-            } else {
-                toggle.value = 'customer'; // When unchecked, set value to 'customer'
-                customerLabel.classList.add("highlight");
-                businessLabel.classList.remove("highlight");
-            }
-        });
-    </script>
+// Toggle event listener to update the hidden input value dynamically
+toggle.addEventListener("change", () => {
+  if (toggle.checked) {
+    accountTypeInput.value = 'business'; // Business account type
+    businessLabel.classList.add("highlight");
+    customerLabel.classList.remove("highlight");
+    businessNameField.style.display = 'block'; // Show business name field
+  } else {
+    accountTypeInput.value = 'user'; // User account type
+    customerLabel.classList.add("highlight");
+    businessLabel.classList.remove("highlight");
+    businessNameField.style.display = 'none'; // Hide business name field
+  }
+});
+</script>
 </body>
 </html>

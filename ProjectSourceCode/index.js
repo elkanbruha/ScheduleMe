@@ -172,33 +172,56 @@ app.get('/login', (req, res) => {
 
 // MODIFIED REGISTER TO INCLUDE NEW PARAMETERS
 // Register route
+// Updated Register route to handle both user and business registrations
 app.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, type, business_name } = req.body;
   
   try {
-    
-    if (!name || !email || !password) {
+    // Validate required fields
+    if (!name || !email || !password || !type) {
       return res.status(400).render('pages/Register', { 
         error: 'All fields are required' 
       });
     }
     
+    // Additional validation for business registration
+    if (type === 'business' && !business_name) {
+      return res.status(400).render('pages/Register', { 
+        error: 'Business name is required for business registration'
+      });
+    }
     
-    const existingUser = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
-    if (existingUser) {
+    // Check if email already exists in appropriate table
+    let existingEntity;
+    if (type === 'user') {
+      existingEntity = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
+    } else if (type === 'business') {
+      existingEntity = await db.oneOrNone('SELECT * FROM businesses WHERE email = $1', [email]);
+    } else {
+      return res.status(400).render('pages/Register', { 
+        error: 'Invalid account type' 
+      });
+    }
+    
+    if (existingEntity) {
       return res.status(400).render('pages/Register', { 
         error: 'Email already registered' 
       });
     }
     
-    
+    // Hash password
     const hash = await bcrypt.hash(password, 10);
     
-  
-    await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
-      [name, email, hash]);
+    // Insert into appropriate table
+    if (type === 'user') {
+      await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
+        [name, email, hash]);
+    } else if (type === 'business') {
+      await db.none('INSERT INTO businesses(name, email, password, business_name) VALUES($1, $2, $3, $4)',
+        [name, email, hash, business_name]);
+    }
     
-    
+    // Redirect to login page
     return res.redirect('/login');
     
   } catch (error) {
