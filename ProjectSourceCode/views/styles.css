@@ -393,3 +393,31 @@ input:checked + .slider {
     border-color: var(--accent-color);
     box-shadow: 0 0 0 2px rgba(132, 158, 75, 0.2);
 }
+
+.appointment-card {
+    background-color: #f0f7e6;
+    border-left: 4px solid #849e4b;
+    margin-bottom: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  
+  .appointment-time {
+    font-weight: bold;
+    margin-bottom: 3px;
+  }
+  
+  .appointment-with {
+    color: #555;
+  }
+  
+  .appointment-reason {
+    margin-top: 3px;
+    font-style: italic;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }

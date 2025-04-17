@@ -11,6 +11,7 @@
         {{#each (array "Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday")}}
         <div class="col-sm m-1 bg-white rounded px-1 px-md-2" id="{{lower this}}">
           <div class="h6 text-center position-relative py-2 day">{{this}}</div>
+          <div class="appointments-container"></div>
         </div>
         {{/each}}
       </div>
@@ -55,10 +56,12 @@
     </div>
   </div>
 </div>
+
 <script>
-  // Fetch businesses when the page loads
+  // Initialize everything when the page loads
   document.addEventListener('DOMContentLoaded', function() {
     fetchBusinesses();
+    fetchAppointments();
   });
 
   // Function to fetch businesses from the API
@@ -108,6 +111,80 @@
       });
   }
 
+  // Function to fetch appointments for the current user or business
+  function fetchAppointments() {
+    fetch('/appointments')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Clear all existing appointments from the calendar
+        const appointmentContainers = document.querySelectorAll('.appointments-container');
+        appointmentContainers.forEach(container => {
+          container.innerHTML = '';
+        });
+        
+        // Display appointments on the calendar
+        if (data.appointments && data.appointments.length > 0) {
+          data.appointments.forEach(appointment => {
+            displayAppointment(appointment);
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching appointments:', error);
+      });
+  }
+
+  // Function to display an appointment on the calendar
+  function displayAppointment(appointment) {
+    // Parse the start time
+    const startTime = new Date(appointment.start_time);
+    const endTime = new Date(appointment.end_time);
+    
+    // Get the day of the week (0 = Sunday, 1 = Monday, etc.)
+    const dayOfWeek = startTime.getDay();
+    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const dayName = dayNames[dayOfWeek];
+    
+    // Format the time (e.g. "10:00 AM - 11:00 AM")
+    const formattedStartTime = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formattedEndTime = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeRange = `${formattedStartTime} - ${formattedEndTime}`;
+    
+    // Create the appointment card
+    const appointmentCard = document.createElement('div');
+    appointmentCard.className = 'appointment-card';
+    appointmentCard.setAttribute('data-appointment-id', appointment.appointment_id);
+    
+    // Determine who the appointment is with based on user type
+    let appointmentWithText = '';
+    if (appointment.user_name) {
+      // Logged in as business, show user name
+      appointmentWithText = `With: ${appointment.user_name}`;
+    } else if (appointment.business_name || appointment.business_display_name) {
+      // Logged in as user, show business name
+      appointmentWithText = `With: ${appointment.business_display_name || appointment.business_name}`;
+    }
+    
+    // Set the inner HTML of the appointment card
+    appointmentCard.innerHTML = `
+      <div class="appointment-time">${timeRange}</div>
+      <div class="appointment-with">${appointmentWithText}</div>
+      <div class="appointment-reason">${appointment.reason || 'No reason provided'}</div>
+    `;
+    
+    // Add the appointment card to the appropriate day column
+    const dayColumn = document.getElementById(dayName);
+    if (dayColumn) {
+      const appointmentsContainer = dayColumn.querySelector('.appointments-container');
+      appointmentsContainer.appendChild(appointmentCard);
+    }
+  }
+
   // Function to save the event/appointment
   function saveEvent() {
     const businessId = document.getElementById('business_id').value;
@@ -153,9 +230,11 @@
       // Reset the form
       document.getElementById('appointmentForm').reset();
       
-      // Optionally refresh the calendar or show a success message
+      // Refresh appointments
+      fetchAppointments();
+      
+      // Show success message
       alert('Appointment created successfully');
-      // You could also reload appointments here
     })
     .catch(error => {
       console.error('Error creating appointment:', error);
