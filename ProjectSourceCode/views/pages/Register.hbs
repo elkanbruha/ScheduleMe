@@ -1,4 +1,3 @@
-{{> message}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,19 +12,16 @@
 <div class="login-container">
 <h2>Welcome To ScheduleMe!</h2>
 <p>Please sign up to continue</p>
-<form action="/register" method="POST">
+<form id="registerForm" action="/register" method="POST">
 <input type="text" name="name" placeholder="Full Name" required />
-<input type="text" name="email" placeholder="Email" required />
+<input type="email" name="email" placeholder="Email" required />
 <input type="password" name="password" placeholder="Password" required />
-
 <!-- Hidden input for account type -->
 <input type="hidden" name="type" id="accountType" value="user" />
-
 <!-- Business Name field (initially hidden) -->
 <div id="businessNameField" style="display:none;">
-<input type="text" name="business_name" placeholder="Business Name" required />
+<input type="text" name="business_name" placeholder="Business Name" />
 </div>
-
 <!-- Customer/Business Toggle -->
 <div class="toggle-wrapper">
 <label class="toggle">
@@ -48,6 +44,8 @@ const customerLabel = document.querySelector('.customer');
 const businessLabel = document.querySelector('.business');
 const accountTypeInput = document.querySelector('#accountType');
 const businessNameField = document.querySelector('#businessNameField');
+const businessNameInput = document.querySelector('input[name="business_name"]');
+const form = document.getElementById('registerForm');
 
 // Set default highlighting
 customerLabel.classList.add("highlight");
@@ -59,13 +57,16 @@ toggle.addEventListener("change", () => {
     businessLabel.classList.add("highlight");
     customerLabel.classList.remove("highlight");
     businessNameField.style.display = 'block'; // Show business name field
+    businessNameInput.setAttribute('required', ''); // Make business name required
   } else {
     accountTypeInput.value = 'user'; // User account type
     customerLabel.classList.add("highlight");
     businessLabel.classList.remove("highlight");
     businessNameField.style.display = 'none'; // Hide business name field
+    businessNameInput.removeAttribute('required'); // Make business name not required
   }
 });
+
 </script>
 </body>
 </html>
