@@ -428,3 +428,13 @@ input:checked + .slider {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .badge-business {
+    background-color: var(--accent-color); /* Orange color */
+    color: white;
+    padding: 0.25em 0.4em;
+    font-size: 100%;
+    font-weight: 700;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+  }

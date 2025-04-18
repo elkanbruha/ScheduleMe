@@ -138,6 +138,27 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  // Store the original render method
+  const originalRender = res.render;
+  
+  // Override the render method
+  res.render = function(view, options, callback) {
+    // Create options object if it doesn't exist
+    options = options || {};
+    
+    // Add the navbar variables
+    options.isLoggedIn = !!req.session.user;
+    options.isBusiness = req.session.user && req.session.userType === 'business';
+    options.email = req.session.user ? req.session.user.email : '';
+    
+    // Call the original render method
+    originalRender.call(this, view, options, callback);
+  };
+  
+  next();
+});
+
 /// Endpoint Config ///
 
 // home
@@ -268,7 +289,16 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-  res.render('pages/logout'); 
+  // Destroy the session
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).send('Error logging out');
+    }
+    
+    // Redirect to home page after logout
+    res.redirect('/');
+  });
 });
 
 app.get('/calendar', (req, res) => {
