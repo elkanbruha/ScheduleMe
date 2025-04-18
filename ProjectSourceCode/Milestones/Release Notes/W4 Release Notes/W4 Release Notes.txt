@@ -1,0 +1,35 @@
+Release Notes – Week 4/18/2025
+
+Date: 4/18/2025
+Release Version: v0.1.4
+Status: Core Application now working and adding quality of life features
+
+Highlights
+We have now gotten the key features of the app working and are quickly adding quality of life features
+to give our customers the best app possible. 
+
+Key Milestones Achieved
+- Wrote Test cases using Chai
+- Testing is working well
+- Reassigned Team roles
+- Re polished index.js files
+    - Edited api's to be cleaner and more efficient
+    - Api endpoint now can be used for testing purposes
+- Finished the integration of Apple calandar into our services so people can download events
+- Login, Register, and logout finally working for customers
+- Fixed calandar and appointments issues
+- appointments with the business now working
+- both customer side and business side works
+- Started working on built in video call features
+- completed the api call for the video call features.
+
+
+
+Next Steps:
+- Finish up UI for the api video call features
+- integrate video call features into calandar for seamleass access
+- Finish up about us page
+- polish any errors or bugs
+- Start creating presentation for investors
+
+We have some Pictures!!! (look in the W3 release notes folder)
