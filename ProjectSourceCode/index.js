@@ -15,22 +15,11 @@ const axios = require('axios'); // To make HTTP requests from our server.
 
 /// Handlebars config
 const hbs = handlebars.create({
-  extname: 'hbs',
-  layoutsDir: __dirname + '/views/layouts',
-  partialsDir: __dirname + '/views/partials',
-  // Add helpers here
-  helpers: {
-      // Register the array helper to create arrays in templates
-      array: function() {
-          return Array.prototype.slice.call(arguments, 0, -1);
-      },
-      // Register the lower helper to convert strings to lowercase
-      lower: function(str) {
-          return str.toLowerCase();
-      }
-      // You can add other custom helpers here as needed
-  }
-});
+    extname: 'hbs',
+    layoutsDir: __dirname + '/views/layouts',
+    partialsDir: __dirname + '/views/partials',
+  });
+
 
 // database configuration
 
@@ -172,54 +161,32 @@ app.get('/login', (req, res) => {
 
 // MODIFIED REGISTER TO INCLUDE NEW PARAMETERS
 // Register route
-// Updated Register route to handle both user and business registrations
 app.post('/register', async (req, res) => {
-  const { name, email, password, type, business_name } = req.body;
+  const { name, email, password } = req.body;
   
   try {
-    // Validate required fields
-    if (!name || !email || !password || !type) {
+    
+    if (!name || !email || !password) {
       return res.status(400).render('pages/Register', { 
         error: 'All fields are required' 
       });
     }
     
-    // Additional validation for business registration
-    if (type === 'business' && !business_name) {
-      return res.status(400).render('pages/Register', { 
-        error: 'Business name is required for business registration'
-      });
-    }
     
-    // Check if email already exists in appropriate table
-    let existingEntity;
-    if (type === 'user') {
-      existingEntity = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
-    } else if (type === 'business') {
-      existingEntity = await db.oneOrNone('SELECT * FROM businesses WHERE email = $1', [email]);
-    } else {
-      return res.status(400).render('pages/Register', { 
-        error: 'Invalid account type' 
-      });
-    }
-    
-    if (existingEntity) {
+    const existingUser = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
+    if (existingUser) {
       return res.status(400).render('pages/Register', { 
         error: 'Email already registered' 
       });
     }
     
-    // Hash password
+    
     const hash = await bcrypt.hash(password, 10);
     
-    // Insert into appropriate table
-    if (type === 'user') {
-      await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
-        [name, email, hash]);
-    } else if (type === 'business') {
-      await db.none('INSERT INTO businesses(name, email, password, business_name) VALUES($1, $2, $3, $4)',
-        [name, email, hash, business_name]);
-    }
+  
+    await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
+      [name, email, hash]);
+    
     
     // Redirect to login page
     return res.redirect('/login');
@@ -385,13 +352,53 @@ app.get('/businesses', async (req, res) => {
   }
 });
 
+//iCalendar Helper functions
+const { writeFile } = require('fs/promises');
+//const { createEvent } = require('ics'); // can't find module, causing docker to improperly compose up
+
+function dateToIcsArray(dateInput) {
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) throw new Error('Invalid date format');
+  return [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes()];
+}
+
+function generateIcsFile(appointment, filePath) {
+  return new Promise((resolve, reject) => {
+    const event = {
+      start: dateToIcsArray(appointment.start_time),
+      end: dateToIcsArray(appointment.end_time),
+      title: appointment.reason || 'Appointment',
+      description: `${appointment.description || 'No description provided.'}
+With: ${appointment.user_name || appointment.business_name || 'Unknown'}
+`,
+      location: appointment.location || 'Online or TBD',
+      uid: `${appointment.appointment_id}@yourdomain.com`,
+      organizer: {
+        name: 'ScheduleMe'
+      },
+    };
+
+    createEvent(event, async (error, value) => {
+      if (error) return reject(error);
+      try {
+        await writeFile(filePath, value);
+        resolve(filePath);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
+
+//module.exports = generateIcsFile;
+
 
 // for iCalendar Downloads
 app.get('/download-ics/:appointmentId', async (req, res) => {
   const appointmentId = req.params.appointmentId;
 
-  // Replace this with your DB query to get appointment by ID
-  const appointment = await getAppointmentFromDatabase(appointmentId); // <- you write this function
+  // Replace this with DB query to get appointment by ID
+  const appointment = await getAppointmentFromDatabase(appointmentId); // <- function incomplete should be used when and appt is clicked
 
   if (!appointment) {
     return res.status(404).send('Appointment not found');
@@ -416,10 +423,6 @@ app.get('/download-ics/:appointmentId', async (req, res) => {
   }
 });
 
-// unsure if lines below are needed
-//module.exports = router;
-//const icsRoutes = require('./routes/ics');
-//app.use('/', icsRoutes);
 
 /// End Endpoint Config ///
 
