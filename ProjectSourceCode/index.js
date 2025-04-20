@@ -9,21 +9,29 @@ const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server.
-
-
-
+const { writeFile, unlink } = require('fs/promises');
+const fs = require('fs');
 
 /// Handlebars config
 const hbs = handlebars.create({
-    extname: 'hbs',
-    layoutsDir: __dirname + '/views/layouts',
-    partialsDir: __dirname + '/views/partials',
-  });
-
+  extname: 'hbs',
+  layoutsDir: __dirname + '/views/layouts',
+  partialsDir: __dirname + '/views/partials',
+  // Add helpers here
+  helpers: {
+    // Register the array helper to create arrays in templates
+    array: function() {
+      return Array.prototype.slice.call(arguments, 0, -1);
+    },
+    // Register the lower helper to convert strings to lowercase
+    lower: function(str) {
+      return str.toLowerCase();
+    }
+    // You can add other custom helpers here as needed
+  }
+});
 
 // database configuration
-
-
 const dbConfig = {
   host: 'db',  
   port: 5432,  
@@ -35,80 +43,78 @@ const dbConfig = {
   connectionTimeoutMillis: 2000,
   ssl: false
 };
+  
+// Create database connection
+const db = pgp(dbConfig);
 
-  
-  // Create database connection
-  const db = pgp(dbConfig);
-  
-  // Test database connection
-  const testConnection = async () => {
-    try {
-      await db.one('SELECT 1');
-      console.log('Database connection successful');
-      return true;
-    } catch (error) {
-      console.error('Database connection failed:', error);
-      return false;
-    }
-  };
-  
-  // Initialize database
-  const initDB = async () => {
-    try {
-      const isConnected = await testConnection();
-      if (!isConnected) {
-        throw new Error('Database connection failed');
-      }
-  
-      // Check if tables exist, create if they don't
-      await db.tx(async t => {
-        await t.none(`
-          CREATE TABLE IF NOT EXISTS users (
-            user_id SERIAL PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
-            email VARCHAR(255) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL
-          )
-        `);
-  
-        await t.none(`
-          CREATE TABLE IF NOT EXISTS businesses (
-            business_id SERIAL PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL UNIQUE,
-            password VARCHAR(255) NOT NULL,
-            business_name VARCHAR(255) NOT NULL
-          )
-        `);
-  
-        await t.none(`
-          CREATE TABLE IF NOT EXISTS appointments (
-            appointment_id SERIAL PRIMARY KEY,
-            business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
-            user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-            start_time TIMESTAMP NOT NULL,
-            end_time TIMESTAMP NOT NULL,
-            reason TEXT,
-            CHECK (start_time < end_time)
-          )
-        `);
-  
-        // Create indexes
-        await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)');
-        await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_business ON appointments(business_id)');
-        await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time)');
-      });
-  
-      console.log('Database initialization completed');
-    } catch (error) {
-      console.error('Database initialization failed:', error);
-      process.exit(1);
-    }
-  };
-  
-  // Initialize database
-  initDB();
+// Test database connection
+const testConnection = async () => {
+  try {
+    await db.one('SELECT 1');
+    console.log('Database connection successful');
+    return true;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return false;
+  }
+};
 
+// Initialize database
+const initDB = async () => {
+  try {
+    const isConnected = await testConnection();
+    if (!isConnected) {
+      throw new Error('Database connection failed');
+    }
+
+    // Check if tables exist, create if they don't
+    await db.tx(async t => {
+      await t.none(`
+        CREATE TABLE IF NOT EXISTS users (
+          user_id SERIAL PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL
+        )
+      `);
+
+      await t.none(`
+        CREATE TABLE IF NOT EXISTS businesses (
+          business_id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password VARCHAR(255) NOT NULL,
+          business_name VARCHAR(255) NOT NULL
+        )
+      `);
+
+      await t.none(`
+        CREATE TABLE IF NOT EXISTS appointments (
+          appointment_id SERIAL PRIMARY KEY,
+          business_id INTEGER NOT NULL REFERENCES businesses(business_id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+          start_time TIMESTAMP NOT NULL,
+          end_time TIMESTAMP NOT NULL,
+          reason TEXT,
+          CHECK (start_time < end_time)
+        )
+      `);
+
+      // Create indexes
+      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_user ON appointments(user_id)');
+      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_business ON appointments(business_id)');
+      await t.none('CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(start_time)');
+    });
+
+    console.log('Database initialization completed');
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    process.exit(1);
+  }
+};
+
+// Initialize database
+initDB();
 
 // Register `hbs` as our view engine using its bound `engine()` function.
 app.engine('hbs', hbs.engine);
@@ -132,61 +138,101 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  // Store the original render method
+  const originalRender = res.render;
+  
+  // Override the render method
+  res.render = function(view, options, callback) {
+    // Create options object if it doesn't exist
+    options = options || {};
+    
+    // Add the navbar variables
+    options.isLoggedIn = !!req.session.user;
+    options.isBusiness = req.session.user && req.session.userType === 'business';
+    options.email = req.session.user ? req.session.user.email : '';
+    
+    // Call the original render method
+    originalRender.call(this, view, options, callback);
+  };
+  
+  next();
+});
 
 /// Endpoint Config ///
 
 // home
 app.get('/', (req, res) => {
-    res.render('pages/home', {}, (err, html) => {
-        if (err) {
-            res.status(500).send('Error rendering page');
-        } else {
-            res.send(html + '\n\nSuccess');
-        }
-    });
+  res.render('pages/home', {}, (err, html) => {
+    if (err) {
+      res.status(500).send('Error rendering page');
+    } else {
+      res.send(html + '\n\nSuccess');
+    }
+  });
 });
 
 app.get('/register', (req, res) => {
-    res.render('pages/Register'); 
+  res.render('pages/Register'); 
 });
 
 app.get('/login', (req, res) => {
-    //do something
-    res.render('pages/login');
-  });
-
-  app.get('/about', (req, res) => {
-    res.render('pages/about'); 
+  //do something
+  res.render('pages/login');
 });
 
-// MODIFIED REGISTER TO INCLUDE NEW PARAMETERS
-// Register route
+app.get('/about', (req, res) => {
+  res.render('pages/about'); 
+});
+
+// Register route to handle both user and business registrations
 app.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, type, business_name } = req.body;
   
   try {
-    
-    if (!name || !email || !password) {
+    // Validate required fields
+    if (!name || !email || !password || !type) {
       return res.status(400).render('pages/Register', { 
         error: 'All fields are required' 
       });
     }
     
+    // Additional validation for business registration
+    if (type === 'business' && !business_name) {
+      return res.status(400).render('pages/Register', { 
+        error: 'Business name is required for business registration'
+      });
+    }
     
-    const existingUser = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
-    if (existingUser) {
+    // Check if email already exists in appropriate table
+    let existingEntity;
+    if (type === 'user') {
+      existingEntity = await db.oneOrNone('SELECT * FROM users WHERE email = $1', [email]);
+    } else if (type === 'business') {
+      existingEntity = await db.oneOrNone('SELECT * FROM businesses WHERE email = $1', [email]);
+    } else {
+      return res.status(400).render('pages/Register', { 
+        error: 'Invalid account type' 
+      });
+    }
+    
+    if (existingEntity) {
       return res.status(400).render('pages/Register', { 
         error: 'Email already registered' 
       });
     }
     
-    
+    // Hash password
     const hash = await bcrypt.hash(password, 10);
     
-  
-    await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
-      [name, email, hash]);
-    
+    // Insert into appropriate table
+    if (type === 'user') {
+      await db.none('INSERT INTO users(name, email, password) VALUES($1, $2, $3)',
+        [name, email, hash]);
+    } else if (type === 'business') {
+      await db.none('INSERT INTO businesses(name, email, password, business_name) VALUES($1, $2, $3, $4)',
+        [name, email, hash, business_name]);
+    }
     
     // Redirect to login page
     return res.redirect('/login');
@@ -242,19 +288,26 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
 app.get('/logout', (req, res) => {
-    res.render('pages/logout'); 
+  // Destroy the session
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Error destroying session:', err);
+      return res.status(500).send('Error logging out');
+    }
+    
+    // Redirect to home page after logout
+    res.redirect('/');
+  });
 });
 
 app.get('/calendar', (req, res) => {
-    res.render('pages/Calendar'); 
+  res.render('pages/Calendar'); 
 });
 
 app.get('/help', (req, res) => {
   res.render('pages/help'); 
 });
-
 
 app.post('/appointments', async (req, res) => {
   // Check if user is logged in
@@ -352,10 +405,172 @@ app.get('/businesses', async (req, res) => {
   }
 });
 
-//iCalendar Helper functions
-const { writeFile } = require('fs/promises');
-//const { createEvent } = require('ics'); // can't find module, causing docker to improperly compose up
+// Get a single appointment by ID
+app.get('/appointments/:id', async (req, res) => {
+  // Check if user is logged in
+  if (!req.session.user || !req.session.userType) {
+    return res.status(401).json({ message: 'You need to be logged in to view appointments' });
+  }
+  
+  const appointmentId = req.params.id;
+  
+  try {
+    let appointment;
+    
+    // Check if user or business, then fetch appropriate appointment with joins
+    if (req.session.userType === 'user') {
+      appointment = await db.oneOrNone(`
+        SELECT a.*, b.name as business_name, b.business_name as business_display_name
+        FROM appointments a
+        JOIN businesses b ON a.business_id = b.business_id
+        WHERE a.appointment_id = $1 AND a.user_id = $2
+      `, [appointmentId, req.session.user.user_id]);
+    } else if (req.session.userType === 'business') {
+      appointment = await db.oneOrNone(`
+        SELECT a.*, u.name as user_name 
+        FROM appointments a
+        JOIN users u ON a.user_id = u.user_id
+        WHERE a.appointment_id = $1 AND a.business_id = $2
+      `, [appointmentId, req.session.user.business_id]);
+    }
+    
+    if (!appointment) {
+      return res.status(404).json({ 
+        message: 'Appointment not found or you do not have permission to view it' 
+      });
+    }
+    
+    res.status(200).json({ appointment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
+// Update an appointment
+app.put('/appointments/:id', async (req, res) => {
+  // Check if user is logged in
+  if (!req.session.user || !req.session.userType) {
+    return res.status(401).json({ message: 'You need to be logged in to update appointments' });
+  }
+  
+  const appointmentId = req.params.id;
+  const { start_time, end_time, reason } = req.body;
+  
+  // Validate required fields
+  if (!start_time || !end_time) {
+    return res.status(400).json({ message: 'Start time and end time are required' });
+  }
+  
+  try {
+    // First, check if the appointment exists and belongs to this user/business
+    let appointment;
+    
+    if (req.session.userType === 'user') {
+      appointment = await db.oneOrNone(`
+        SELECT * FROM appointments 
+        WHERE appointment_id = $1 AND user_id = $2
+      `, [appointmentId, req.session.user.user_id]);
+    } else if (req.session.userType === 'business') {
+      appointment = await db.oneOrNone(`
+        SELECT * FROM appointments 
+        WHERE appointment_id = $1 AND business_id = $2
+      `, [appointmentId, req.session.user.business_id]);
+    }
+    
+    if (!appointment) {
+      return res.status(404).json({ 
+        message: 'Appointment not found or you do not have permission to update it' 
+      });
+    }
+    
+    // Update the appointment
+    await db.none(`
+      UPDATE appointments 
+      SET start_time = $1, end_time = $2, reason = $3
+      WHERE appointment_id = $4
+    `, [start_time, end_time, reason, appointmentId]);
+    
+    return res.status(200).json({ message: 'Appointment updated successfully' });
+    
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Delete an appointment
+app.delete('/appointments/:id', async (req, res) => {
+  // Check if user is logged in
+  if (!req.session.user || !req.session.userType) {
+    return res.status(401).json({ message: 'You need to be logged in to delete appointments' });
+  }
+  
+  const appointmentId = req.params.id;
+  
+  try {
+    // First, check if the appointment exists and belongs to this user/business
+    let appointment;
+    
+    if (req.session.userType === 'user') {
+      appointment = await db.oneOrNone(`
+        SELECT * FROM appointments 
+        WHERE appointment_id = $1 AND user_id = $2
+      `, [appointmentId, req.session.user.user_id]);
+    } else if (req.session.userType === 'business') {
+      appointment = await db.oneOrNone(`
+        SELECT * FROM appointments 
+        WHERE appointment_id = $1 AND business_id = $2
+      `, [appointmentId, req.session.user.business_id]);
+    }
+    
+    if (!appointment) {
+      return res.status(404).json({ 
+        message: 'Appointment not found or you do not have permission to delete it' 
+      });
+    }
+    
+    // Delete the appointment
+    await db.none('DELETE FROM appointments WHERE appointment_id = $1', [appointmentId]);
+    
+    return res.status(200).json({ message: 'Appointment deleted successfully' });
+    
+  } catch (error) {
+    console.error('Error deleting appointment:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Function to get appointment for iCalendar export
+async function getAppointmentFromDatabase(appointmentId, req) {
+  try {
+    // First check if the user is authorized to access this appointment
+    let appointment;
+    
+    if (req.session.userType === 'user') {
+      appointment = await db.oneOrNone(`
+        SELECT a.*, b.name as business_name, b.business_name as business_display_name
+        FROM appointments a
+        JOIN businesses b ON a.business_id = b.business_id
+        WHERE a.appointment_id = $1 AND a.user_id = $2
+      `, [appointmentId, req.session.user.user_id]);
+    } else if (req.session.userType === 'business') {
+      appointment = await db.oneOrNone(`
+        SELECT a.*, u.name as user_name 
+        FROM appointments a
+        JOIN users u ON a.user_id = u.user_id
+        WHERE a.appointment_id = $1 AND a.business_id = $2
+      `, [appointmentId, req.session.user.business_id]);
+    }
+    
+    return appointment;
+  } catch (error) {
+    console.error('Error fetching appointment:', error);
+    return null;
+  }
+}
+
+// Helper functions for iCalendar
 function dateToIcsArray(dateInput) {
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) throw new Error('Invalid date format');
@@ -364,47 +579,64 @@ function dateToIcsArray(dateInput) {
 
 function generateIcsFile(appointment, filePath) {
   return new Promise((resolve, reject) => {
-    const event = {
-      start: dateToIcsArray(appointment.start_time),
-      end: dateToIcsArray(appointment.end_time),
-      title: appointment.reason || 'Appointment',
-      description: `${appointment.description || 'No description provided.'}
-With: ${appointment.user_name || appointment.business_name || 'Unknown'}
-`,
-      location: appointment.location || 'Online or TBD',
-      uid: `${appointment.appointment_id}@yourdomain.com`,
-      organizer: {
-        name: 'ScheduleMe'
-      },
-    };
-
-    createEvent(event, async (error, value) => {
-      if (error) return reject(error);
-      try {
-        await writeFile(filePath, value);
-        resolve(filePath);
-      } catch (err) {
-        reject(err);
-      }
-    });
+    try {
+      // Create basic ICS content without using ics library
+      const startDate = new Date(appointment.start_time);
+      const endDate = new Date(appointment.end_time);
+      
+      const formatIcsDate = (date) => {
+        return date.toISOString().replace(/-|:|\.\d+/g, '').slice(0, 15) + 'Z';
+      };
+      
+      const startDateStr = formatIcsDate(startDate);
+      const endDateStr = formatIcsDate(endDate);
+      const now = formatIcsDate(new Date());
+      
+      const withPerson = appointment.user_name || appointment.business_name || 'Unknown';
+      
+      const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ScheduleMe//NONSGML Calendar//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${appointment.appointment_id}@scheduleme.com
+DTSTAMP:${now}
+DTSTART:${startDateStr}
+DTEND:${endDateStr}
+SUMMARY:${appointment.reason || 'Appointment'}
+DESCRIPTION:${appointment.reason || 'No description provided.'}\\nWith: ${withPerson}
+LOCATION:Online or TBD
+END:VEVENT
+END:VCALENDAR`;
+      
+      // Write the ICS file
+      fs.writeFileSync(filePath, icsContent);
+      resolve(filePath);
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
-//module.exports = generateIcsFile;
-
-
-// for iCalendar Downloads
+// Download ICS file for an appointment
 app.get('/download-ics/:appointmentId', async (req, res) => {
-  const appointmentId = req.params.appointmentId;
+  const appointmentId = req.params.id;
 
-  // Replace this with DB query to get appointment by ID
-  const appointment = await getAppointmentFromDatabase(appointmentId); // <- function incomplete should be used when and appt is clicked
+  // Get the appointment data
+  const appointment = await getAppointmentFromDatabase(appointmentId, req);
 
   if (!appointment) {
     return res.status(404).send('Appointment not found');
   }
 
-  const filePath = path.join(__dirname, `../temp/appointment-${appointmentId}.ics`);
+  // Create directory if it doesn't exist
+  const tempDir = path.join(__dirname, '../temp');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  const filePath = path.join(tempDir, `appointment-${appointmentId}.ics`);
   
   try {
     await generateIcsFile(appointment, filePath);
@@ -413,8 +645,14 @@ app.get('/download-ics/:appointmentId', async (req, res) => {
         console.error('Download error:', err);
         res.status(500).send('Error downloading file');
       } else {
-        // Optional: Delete file after download
-        fs.unlink(filePath, () => {});
+        // Delete file after download
+        setTimeout(() => {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (e) {
+            console.error('Error deleting file:', e);
+          }
+        }, 1000);
       }
     });
   } catch (err) {
@@ -423,13 +661,10 @@ app.get('/download-ics/:appointmentId', async (req, res) => {
   }
 });
 
-
 /// End Endpoint Config ///
-
-
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

@@ -402,6 +402,13 @@ input:checked + .slider {
     border-radius: 4px;
     font-size: 0.85rem;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .appointment-card:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
   }
   
   .appointment-time {
@@ -420,4 +427,14 @@ input:checked + .slider {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .badge-business {
+    background-color: var(--accent-color); /* Orange color */
+    color: white;
+    padding: 0.25em 0.4em;
+    font-size: 100%;
+    font-weight: 700;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
   }
