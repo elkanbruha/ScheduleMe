@@ -176,6 +176,10 @@ app.get('/register', (req, res) => {
   res.render('pages/Register'); 
 });
 
+app.get('/videocall', (req, res) => {
+  res.render('pages/videocall'); 
+});
+
 app.get('/login', (req, res) => {
   //do something
   res.render('pages/login');
