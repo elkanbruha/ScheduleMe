@@ -1,4 +1,5 @@
 {{> head title="Calendar - ScheduleMe" }}
+
 <div class="row">
   <div class="col-2">
     <div class="custom-container">
@@ -7,6 +8,35 @@
   </div>
   <div class="col">
     <div class="container-md container-fluid py-4 h-100">
+      <!-- Timezone Display and Selection -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center">
+            <h3>Your Calendar</h3>
+            <div class="timezone-controls">
+              <span class="me-2">Current timezone:</span>
+              <select id="timezone-selector" class="form-select form-select-sm" style="width: 200px; display: inline-block;">
+                <option value="3">Hawaii Time (HT)</option>
+                <option value="2">Alaska Time (AKT)</option>
+                <option value="1">Pacific Time (PT)</option>
+                <option value="0">Mountain Time (MT)</option>
+                <option value="-1">Central Time (CT)</option>
+                <option value="-2">Eastern Time (ET)</option>
+                <option value="-7">Greenwich Mean Time (GMT)</option>
+                <option value="-8">Central European Time (CET)</option>
+                <option value="-9">Eastern European Time (EET)</option>
+                <option value="-11">Moscow Time (MSK)</option>
+                <option value="-12">Dubai Time (GST)</option>
+                <option value="-13">India Standard Time (IST)</option>
+                <option value="-15">China Standard Time (CST)</option>
+                <option value="-16">Japan Standard Time (JST)</option>
+              </select>
+              <button id="change-timezone-btn" class="btn btn-sm btn-outline-secondary">Apply Timezone</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="calendar" class="row h-100">
         {{#each (array "Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday")}}
         <div class="col-sm m-1 bg-white rounded px-1 px-md-2" id="{{lower this}}">
@@ -49,6 +79,11 @@
             <label for="reason" class="form-label">Reason for Meeting</label>
             <textarea class="form-control" id="reason" rows="3" required></textarea>
           </div>
+          <div class="mb-3">
+            <p class="text-muted small">
+              <i class="fas fa-info-circle"></i> Times are adjusted for your selected timezone.
+            </p>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -80,8 +115,27 @@
 </div>
 
 <script>
+  // Initialize timezone offset
+  let timezoneOffset = 0;
+  
   // Initialize everything when the page loads
   document.addEventListener('DOMContentLoaded', function() {
+    // Load saved timezone offset from localStorage
+    const savedOffset = localStorage.getItem('timezoneOffset');
+    if (savedOffset !== null) {
+      timezoneOffset = parseInt(savedOffset, 10);
+      document.getElementById('timezone-selector').value = savedOffset;
+    }
+    
+    // Handle timezone change button
+    document.getElementById('change-timezone-btn').addEventListener('click', function() {
+      const newOffset = parseInt(document.getElementById('timezone-selector').value, 10);
+      timezoneOffset = newOffset;
+      localStorage.setItem('timezoneOffset', newOffset);
+      fetchAppointments();
+    });
+    
+    // Initialize everything else
     fetchBusinesses();
     fetchAppointments();
     
@@ -164,7 +218,8 @@
         // Display appointments on the calendar
         if (data.appointments && data.appointments.length > 0) {
           data.appointments.forEach(appointment => {
-            displayAppointment(appointment);
+            // Apply timezone offset and display
+            displayAppointment(adjustAppointmentTime(appointment));
           });
         }
       })
@@ -172,10 +227,44 @@
         console.error('Error fetching appointments:', error);
       });
   }
+  
+  // Function to adjust appointment times based on timezone offset
+  // Function to adjust appointment times based on timezone offset
+function adjustAppointmentTime(appointment) {
+  // Create a copy to avoid modifying the original
+  const adjustedAppointment = {...appointment};
+  
+  // Store original times
+  adjustedAppointment.original_start_time = appointment.start_time;
+  adjustedAppointment.original_end_time = appointment.end_time;
+  
+  // Apply timezone offset
+  const startDate = new Date(appointment.start_time);
+  const endDate = new Date(appointment.end_time);
+  
+  // Apply timezone offset hours (negative value means hours ahead of MT)
+  // For example: Eastern Time is -2 from MT, meaning add 2 hours
+  startDate.setHours(startDate.getHours() - timezoneOffset);
+  endDate.setHours(endDate.getHours() - timezoneOffset);
+  
+  // Update the appointment with adjusted times
+  adjustedAppointment.start_time = startDate.toISOString();
+  adjustedAppointment.end_time = endDate.toISOString();
+  
+  return adjustedAppointment;
+}
+
+// Function to reverse timezone adjustment (for saving to server)
+function reverseTimezoneAdjustment(dateTimeString) {
+  const date = new Date(dateTimeString);
+  // Reverse the offset to convert back to Mountain Time
+  date.setHours(date.getHours() + timezoneOffset);
+  return date.toISOString().slice(0, 16); // Format as YYYY-MM-DDTHH:MM
+}
 
   // Function to display an appointment on the calendar
   function displayAppointment(appointment) {
-    // Parse the start time
+    // Parse the start and end times (already adjusted for timezone)
     const startTime = new Date(appointment.start_time);
     const endTime = new Date(appointment.end_time);
     
@@ -204,9 +293,16 @@
       appointmentWithText = `With: ${appointment.business_display_name || appointment.business_name}`;
     }
     
+    // Format the date (e.g. "Monday, Jan 2")
+    const formattedDate = startTime.toLocaleDateString([], { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    
     // Set the inner HTML of the appointment card
     appointmentCard.innerHTML = `
       <div class="appointment-time">${timeRange}</div>
+      <div class="appointment-date small text-muted">${formattedDate}</div>
       <div class="appointment-with">${appointmentWithText}</div>
       <div class="appointment-reason">${appointment.reason || 'No reason provided'}</div>
     `;
@@ -237,6 +333,7 @@
     }
     
     // Format datetime-local value (YYYY-MM-DDThh:mm)
+    // Times are already adjusted for timezone offset
     const startTime = new Date(appointment.start_time);
     const endTime = new Date(appointment.end_time);
     
@@ -251,6 +348,10 @@
     document.getElementById('start_time').value = formatDateForInput(startTime);
     document.getElementById('end_time').value = formatDateForInput(endTime);
     document.getElementById('reason').value = appointment.reason || '';
+    
+    // Store original times for reference
+    document.getElementById('start_time').setAttribute('data-original', appointment.original_start_time);
+    document.getElementById('end_time').setAttribute('data-original', appointment.original_end_time);
     
     // Update modal title and button text
     document.getElementById('modal-title').textContent = 'Edit Appointment';
@@ -277,11 +378,15 @@
       return;
     }
     
+    // Convert times back to Mountain Time for storage on server
+    const serverStartTime = reverseTimezoneAdjustment(startTime);
+    const serverEndTime = reverseTimezoneAdjustment(endTime);
+    
     // Create the appointment data
     const appointmentData = {
       business_id: businessId,
-      start_time: startTime,
-      end_time: endTime,
+      start_time: serverStartTime,
+      end_time: serverEndTime,
       reason: reason
     };
     
@@ -378,6 +483,10 @@
     if (document.getElementById('business_id')) {
       document.getElementById('business_id').disabled = false;
     }
+    
+    // Clear data attributes
+    document.getElementById('start_time').removeAttribute('data-original');
+    document.getElementById('end_time').removeAttribute('data-original');
     
     document.getElementById('modal-title').textContent = 'Create Appointment';
     document.getElementById('save-btn').textContent = 'Create Appointment';
