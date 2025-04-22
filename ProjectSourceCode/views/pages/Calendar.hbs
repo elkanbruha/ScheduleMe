@@ -114,6 +114,25 @@
   </div>
 </div>
 
+{{!-- ICS Download Modal --}}
+<div class="modal" id="ics_modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Download to Calendar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Would you like to download this appointment to your calendar?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+        <button type="button" class="btn btn-primary" id="confirm-ics-btn">Yes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   // Initialize timezone offset
   let timezoneOffset = 0;
@@ -142,6 +161,7 @@
     // Initialize the bootstrap modal objects
     window.eventModal = new bootstrap.Modal(document.getElementById('event_modal'));
     window.confirmModal = new bootstrap.Modal(document.getElementById('confirm_modal'));
+    window.icsModal = new bootstrap.Modal(document.getElementById('ics_modal'));
     
     // Set up the confirm delete button
     document.getElementById('confirm-delete-btn').addEventListener('click', function() {
@@ -149,6 +169,15 @@
       if (appointmentId) {
         confirmDeleteAppointment(appointmentId);
       }
+    });
+
+    // Set up the confirm ICS download button
+    document.getElementById('confirm-ics-btn').addEventListener('click', function() {
+      const appointmentId = document.getElementById('appointment_id').value;
+      if (appointmentId) {
+        window.location.href = `/download-ics/${appointmentId}`;
+      }
+      window.icsModal.hide();
     });
   });
 
@@ -308,8 +337,15 @@ function reverseTimezoneAdjustment(dateTimeString) {
     `;
     
     // Add click event to open edit modal
-    appointmentCard.addEventListener('click', () => {
-      openEditModal(appointment);
+    appointmentCard.addEventListener('click', (e) => {
+      // If clicking on the card itself (not a button or other interactive element)
+      if (e.target === appointmentCard || e.target.parentNode === appointmentCard) {
+        // Store the appointment ID for the ICS download
+        document.getElementById('appointment_id').value = appointment.appointment_id;
+        
+        // Show the ICS download modal
+        window.icsModal.show();
+      }
     });
     
     // Add the appointment card to the appropriate day column
