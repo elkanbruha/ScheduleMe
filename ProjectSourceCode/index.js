@@ -224,7 +224,7 @@ app.post('/register', async (req, res) => {
       return res.status(400).render('pages/Register', { 
         error: 'Email already registered' 
       });
-    }
+    } 
     
     // Hash password
     const hash = await bcrypt.hash(password, 10);
@@ -283,11 +283,11 @@ app.post('/login', async (req, res) => {
     req.session.user = entity;
     req.session.userType = type;
     req.session.save();
-    
+     
     // Redirect to calendar page
     res.redirect('/calendar');
   } catch (error) {
-    console.error(error);
+    console.error(error); 
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
