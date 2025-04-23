@@ -359,12 +359,19 @@ app.get('/appointments', async (req, res) => {
     return res.status(401).json({ message: 'You need to be logged in to view appointments' });
   }
   
+  console.log('Session data in /appointments:', {
+    userType: req.session.userType,
+    userId: req.session.user.user_id,
+    user: req.session.user
+  });
+  
   try {
     let appointments;
     
     // Check if user or business
     if (req.session.userType === 'user') {
       const userId = req.session.user.user_id;
+      console.log('Fetching appointments for user:', userId);
       
       // Get appointments for user
       appointments = await db.manyOrNone(`
@@ -374,6 +381,8 @@ app.get('/appointments', async (req, res) => {
         WHERE a.user_id = $1
         ORDER BY a.start_time ASC
       `, [userId]);
+      
+      console.log('Found appointments:', appointments);
     } else if (req.session.userType === 'business') {
       const businessId = req.session.user.business_id;
       
@@ -388,7 +397,7 @@ app.get('/appointments', async (req, res) => {
     
     res.status(200).json({ appointments });
   } catch (error) {
-    console.error(error);
+    console.error('Error in /appointments:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -548,28 +557,50 @@ app.delete('/appointments/:id', async (req, res) => {
 // Function to get appointment for iCalendar export
 async function getAppointmentFromDatabase(appointmentId, req) {
   try {
-    // First check if the user is authorized to access this appointment
-    let appointment;
-    
-    if (req.session.userType === 'user') {
-      appointment = await db.oneOrNone(`
-        SELECT a.*, b.name as business_name, b.business_name as business_display_name
-        FROM appointments a
-        JOIN businesses b ON a.business_id = b.business_id
-        WHERE a.appointment_id = $1 AND a.user_id = $2
-      `, [appointmentId, req.session.user.user_id]);
-    } else if (req.session.userType === 'business') {
-      appointment = await db.oneOrNone(`
-        SELECT a.*, u.name as user_name 
-        FROM appointments a
-        JOIN users u ON a.user_id = u.user_id
-        WHERE a.appointment_id = $1 AND a.business_id = $2
-      `, [appointmentId, req.session.user.business_id]);
+    // Debug logging
+    console.log('Session data:', {
+      userType: req.session.userType,
+      user: req.session.user,
+      appointmentId: appointmentId
+    });
+
+    // First check if the user is logged in
+    if (!req.session.user || !req.session.userType) {
+      console.log('No session data found');
+      return null;
     }
-    
+
+    // First try to get the appointment without user/business check
+    let appointment = await db.oneOrNone(`
+      SELECT a.*, b.name as business_name, b.business_name as business_display_name, u.name as user_name
+      FROM appointments a
+      LEFT JOIN businesses b ON a.business_id = b.business_id
+      LEFT JOIN users u ON a.user_id = u.user_id
+      WHERE a.appointment_id = $1
+    `, [appointmentId]);
+
+    console.log('Raw appointment data:', appointment);
+
+    if (!appointment) {
+      console.log('Appointment not found in database');
+      return null;
+    }
+
+    // Verify ownership
+    if (req.session.userType === 'user' && appointment.user_id !== req.session.user.user_id) {
+      console.log('User does not own this appointment');
+      return null;
+    }
+
+    if (req.session.userType === 'business' && appointment.business_id !== req.session.user.business_id) {
+      console.log('Business does not own this appointment');
+      return null;
+    }
+
+    console.log('Appointment found and verified:', appointment);
     return appointment;
   } catch (error) {
-    console.error('Error fetching appointment:', error);
+    console.error('Error in getAppointmentFromDatabase:', error);
     return null;
   }
 }
@@ -625,14 +656,33 @@ END:VCALENDAR`;
 
 // Download ICS file for an appointment
 app.get('/download-ics/:appointmentId', async (req, res) => {
-  const appointmentId = req.params.id;
+  const appointmentId = req.params.appointmentId;
+  
+  console.log('Download ICS request:', {
+    appointmentId,
+    session: {
+      userType: req.session.userType,
+      userId: req.session.user?.user_id,
+      businessId: req.session.user?.business_id
+    }
+  });
 
   // Get the appointment data
   const appointment = await getAppointmentFromDatabase(appointmentId, req);
 
   if (!appointment) {
+    console.log('Appointment not found or not accessible:', {
+      appointmentId,
+      session: {
+        userType: req.session.userType,
+        userId: req.session.user?.user_id,
+        businessId: req.session.user?.business_id
+      }
+    });
     return res.status(404).send('Appointment not found');
   }
+
+  console.log('Found appointment for download:', appointment);
 
   // Create directory if it doesn't exist
   const tempDir = path.join(__dirname, '../temp');
@@ -644,6 +694,8 @@ app.get('/download-ics/:appointmentId', async (req, res) => {
   
   try {
     await generateIcsFile(appointment, filePath);
+    console.log('ICS file generated successfully:', filePath);
+    
     res.download(filePath, `appointment-${appointmentId}.ics`, (err) => {
       if (err) {
         console.error('Download error:', err);
@@ -653,6 +705,7 @@ app.get('/download-ics/:appointmentId', async (req, res) => {
         setTimeout(() => {
           try {
             fs.unlinkSync(filePath);
+            console.log('Temporary file deleted:', filePath);
           } catch (e) {
             console.error('Error deleting file:', e);
           }
@@ -660,7 +713,7 @@ app.get('/download-ics/:appointmentId', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error generating ICS file:', err);
     res.status(500).send('Failed to generate ICS file');
   }
 });
