@@ -292,69 +292,79 @@ function reverseTimezoneAdjustment(dateTimeString) {
 }
 
   // Function to display an appointment on the calendar
-  function displayAppointment(appointment) {
-    // Parse the start and end times (already adjusted for timezone)
-    const startTime = new Date(appointment.start_time);
-    const endTime = new Date(appointment.end_time);
-    
-    // Get the day of the week (0 = Sunday, 1 = Monday, etc.)
-    const dayOfWeek = startTime.getDay();
-    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-    const dayName = dayNames[dayOfWeek];
-    
-    // Format the time (e.g. "10:00 AM - 11:00 AM")
-    const formattedStartTime = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const formattedEndTime = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const timeRange = `${formattedStartTime} - ${formattedEndTime}`;
-    
-    // Create the appointment card
-    const appointmentCard = document.createElement('div');
-    appointmentCard.className = 'appointment-card';
-    appointmentCard.setAttribute('data-appointment-id', appointment.appointment_id);
-    
-    // Determine who the appointment is with based on user type
-    let appointmentWithText = '';
-    if (appointment.user_name) {
-      // Logged in as business, show user name
-      appointmentWithText = `With: ${appointment.user_name}`;
-    } else if (appointment.business_name || appointment.business_display_name) {
-      // Logged in as user, show business name
-      appointmentWithText = `With: ${appointment.business_display_name || appointment.business_name}`;
-    }
-    
-    // Format the date (e.g. "Monday, Jan 2")
-    const formattedDate = startTime.toLocaleDateString([], { 
-      month: 'short', 
-      day: 'numeric' 
-    });
-    
-    // Set the inner HTML of the appointment card
-    appointmentCard.innerHTML = `
-      <div class="appointment-time">${timeRange}</div>
-      <div class="appointment-date small text-muted">${formattedDate}</div>
-      <div class="appointment-with">${appointmentWithText}</div>
-      <div class="appointment-reason">${appointment.reason || 'No reason provided'}</div>
-    `;
-    
-    // Add click event to open edit modal
-    appointmentCard.addEventListener('click', (e) => {
-      // If clicking on the card itself (not a button or other interactive element)
-      if (e.target === appointmentCard || e.target.parentNode === appointmentCard) {
-        // Store the appointment ID for the ICS download
-        document.getElementById('appointment_id').value = appointment.appointment_id;
-        
-        // Show the ICS download modal
-        window.icsModal.show();
-      }
-    });
-    
-    // Add the appointment card to the appropriate day column
-    const dayColumn = document.getElementById(dayName);
-    if (dayColumn) {
-      const appointmentsContainer = dayColumn.querySelector('.appointments-container');
-      appointmentsContainer.appendChild(appointmentCard);
-    }
+  // Function to display an appointment on the calendar
+function displayAppointment(appointment) {
+  // Parse the start and end times (already adjusted for timezone)
+  const startTime = new Date(appointment.start_time);
+  const endTime = new Date(appointment.end_time);
+  
+  // Get the day of the week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = startTime.getDay();
+  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const dayName = dayNames[dayOfWeek];
+  
+  // Format the time (e.g. "10:00 AM - 11:00 AM")
+  const formattedStartTime = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formattedEndTime = endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeRange = `${formattedStartTime} - ${formattedEndTime}`;
+  
+  // Create the appointment card
+  const appointmentCard = document.createElement('div');
+  appointmentCard.className = 'appointment-card';
+  appointmentCard.setAttribute('data-appointment-id', appointment.appointment_id);
+  
+  // Determine who the appointment is with based on user type
+  let appointmentWithText = '';
+  let isBusinessView = false;
+  
+  if (appointment.user_name) {
+    // Logged in as business, show user name
+    appointmentWithText = `With: ${appointment.user_name}`;
+    isBusinessView = true;
+  } else if (appointment.business_name || appointment.business_display_name) {
+    // Logged in as user, show business name
+    appointmentWithText = `With: ${appointment.business_display_name || appointment.business_name}`;
+    isBusinessView = false;
   }
+  
+  // Format the date (e.g. "Monday, Jan 2")
+  const formattedDate = startTime.toLocaleDateString([], { 
+    month: 'short', 
+    day: 'numeric' 
+  });
+  
+  // Set the inner HTML of the appointment card
+  appointmentCard.innerHTML = `
+    <div class="appointment-time">${timeRange}</div>
+    <div class="appointment-date small text-muted">${formattedDate}</div>
+    <div class="appointment-with">${appointmentWithText}</div>
+    <div class="appointment-reason">${appointment.reason || 'No reason provided'}</div>
+  `;
+  
+  // Add click event with different behavior based on user type
+  appointmentCard.addEventListener('click', (e) => {
+    // If clicking on the card itself (not a button or other interactive element)
+    if (e.target === appointmentCard || e.target.parentNode === appointmentCard) {
+      // Store the appointment ID
+      document.getElementById('appointment_id').value = appointment.appointment_id;
+      
+      if (isBusinessView) {
+        // Business view: Show ICS download modal
+        window.icsModal.show();
+      } else {
+        // User/customer view: Open edit modal to allow editing/deleting
+        openEditModal(appointment);
+      }
+    }
+  });
+  
+  // Add the appointment card to the appropriate day column
+  const dayColumn = document.getElementById(dayName);
+  if (dayColumn) {
+    const appointmentsContainer = dayColumn.querySelector('.appointments-container');
+    appointmentsContainer.appendChild(appointmentCard);
+  }
+}
 
   // Function to open the edit modal with appointment details
   function openEditModal(appointment) {
