@@ -1,0 +1,12 @@
+Gen AI was used in our project for occasionally creating basic templates on the front end and bug fixes on the backend. ChatGPT was the only gen AI used.
+
+When creating these templates for the front end we would typically supply it with a picture of our wireframe for the page and proceed to add functionality and make adjustments so that it both matched
+our vision and functioned properly. Prompts such as "Please create a basic code outline for this site in html" with an image of one of our wireframes attached to the prompt. From there it would give us a
+basically blank page layout that we would insert our websites personal style and information into while making tweaks and fixing any errors that stuck out.
+
+For backend we made sure not to feed any sensitive project data to the AI memory, instead using smaller focused prompts with limited provided code to identify mismatches and errors in the database, sometimes
+using diagrams of the database tables for reference as opposed to code. One of the very few instances where we provided larger snippets of our existing code to the AI was to figure out a mismatch between the form 
+submission for login/register pages and the javascript meant to accept it. The prompt would be something along the lines of "Using this diagram as a reference for the database, what must be changed in
+THIS snippet of code, with reasoning provided" followed by the small snippet it was meant to inspect for error.
+
+For any scenario where AI was used, rigorous testing was done before merging with our main branch to ensure that the code was correct and not unduly repetitive or inefficient.
